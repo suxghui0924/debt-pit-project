@@ -60,7 +60,11 @@ public sealed class TitleMenuController : MonoBehaviour
             int capturedIndex = index;
             menuLabels[index] = menuButtons[index].GetComponentInChildren<TMP_Text>(true);
             StyleMenuButton(menuButtons[index], index);
-            AddPointerEvent(menuButtons[index].gameObject, EventTriggerType.PointerEnter, () => SelectMenu(capturedIndex));
+            AddPointerEvent(menuButtons[index].gameObject, EventTriggerType.PointerEnter, () =>
+            {
+                if (menuButtons[capturedIndex] != null && menuButtons[capturedIndex].interactable)
+                    SelectMenu(capturedIndex);
+            });
             menuButtons[index].onClick.AddListener(() => SelectMenu(capturedIndex));
         }
 
@@ -167,13 +171,20 @@ public sealed class TitleMenuController : MonoBehaviour
 
     private void SelectMenu(int index)
     {
+        if (index < 0 || index >= menuButtons.Length || menuButtons[index] == null || !menuButtons[index].interactable)
+            return;
         selectedIndex = index;
         for (int i = 0; i < menuLabels.Length; i++)
         {
             if (menuLabels[i] != null)
-                menuLabels[i].color = i == selectedIndex ? SelectedTextColor : NormalTextColor;
+            {
+                bool disabled = menuButtons[i] != null && !menuButtons[i].interactable;
+                menuLabels[i].color = disabled
+                    ? new Color(.45f, .42f, .38f, 1f)
+                    : i == selectedIndex ? SelectedTextColor : NormalTextColor;
+            }
             if (menuIndicators[i] != null)
-                menuIndicators[i].enabled = i == selectedIndex;
+                menuIndicators[i].enabled = i == selectedIndex && menuButtons[i] != null && menuButtons[i].interactable;
         }
     }
 
@@ -248,6 +259,10 @@ public sealed class TitleMenuController : MonoBehaviour
         menuButtons[1].interactable = GameSaveService.HasSave;
         if (menuLabels[1] != null)
             menuLabels[1].color = GameSaveService.HasSave ? NormalTextColor : new Color(.45f, .42f, .38f, 1f);
+        if (!GameSaveService.HasSave && menuIndicators[1] != null)
+            menuIndicators[1].enabled = false;
+        if (!GameSaveService.HasSave && selectedIndex == 1)
+            SelectMenu(0);
     }
 
     private static GameObject CreateUiObject(string objectName, Transform parent, Vector2 size)

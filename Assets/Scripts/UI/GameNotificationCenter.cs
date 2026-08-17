@@ -48,7 +48,7 @@ public sealed class GameNotificationCenter : MonoBehaviour
         if (instance == null && SceneManager.GetActiveScene().name == "Map")
             EnsureInstalled();
         if (instance == null) return;
-        Pending.Enqueue(new Notice(message, type));
+        Pending.Enqueue(new Notice(GameLanguage.Notification(message), type));
         instance.Pump();
     }
 

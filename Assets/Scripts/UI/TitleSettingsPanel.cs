@@ -27,12 +27,13 @@ public sealed class TitleSettingsPanel : MonoBehaviour
         var panel = Box("Settings Window", transform, new Vector2(880, 740), Vector2.zero, new Color(0.05f, 0.04f, 0.035f, 0.98f));
         StartCoroutine(UiOpenAnimator.Play(panel));
         Text(GameLanguage.Text("settings"), panel.transform, 52, new Vector2(0, 280), new Vector2(660, 64), Red);
-        resolutionIndex = Array.FindIndex(Screen.resolutions, r => r.width == Screen.currentResolution.width && r.height == Screen.currentResolution.height);
-        if (resolutionIndex < 0) resolutionIndex = Screen.resolutions.Length - 1;
+        Resolution[] availableResolutions = Screen.resolutions;
+        resolutionIndex = Array.FindIndex(availableResolutions, r => r.width == Screen.width && r.height == Screen.height);
+        if (resolutionIndex < 0 && availableResolutions.Length > 0) resolutionIndex = availableResolutions.Length - 1;
         resolutionValue = ResolutionRow(panel.transform, new Vector2(0, 150));
-        ValueRow(panel.transform, GameLanguage.Text("master"), new Vector2(0, 75), d => GameSettings.MasterVolume += d, Percent(GameSettings.MasterVolume), .1f, .01f);
-        ValueRow(panel.transform, GameLanguage.Text("bgm"), new Vector2(0, 0), d => GameSettings.BgmVolume += d, Percent(GameSettings.BgmVolume), .1f, .01f);
-        ValueRow(panel.transform, GameLanguage.Text("sfx"), new Vector2(0, -75), d => GameSettings.SfxVolume += d, Percent(GameSettings.SfxVolume), .1f, .01f);
+        ValueRow(panel.transform, GameLanguage.Text("master"), new Vector2(0, 75), d => GameSettings.MasterVolume += d, Percent(GameSettings.MasterVolume), 1f, .01f);
+        ValueRow(panel.transform, GameLanguage.Text("bgm"), new Vector2(0, 0), d => GameSettings.BgmVolume += d, Percent(GameSettings.BgmVolume), 1f, .01f);
+        ValueRow(panel.transform, GameLanguage.Text("sfx"), new Vector2(0, -75), d => GameSettings.SfxVolume += d, Percent(GameSettings.SfxVolume), 1f, .01f);
         ValueRow(panel.transform, GameLanguage.Text("sensitivity"), new Vector2(0, -150), d => GameSettings.MouseSensitivity += d, GameSettings.MouseSensitivity.ToString("0.0"), 1f, .1f);
         LanguageRow(panel.transform, new Vector2(0, -220));
         var fullscreen = Button(GameLanguage.Text("fullscreen") + ": " + (Screen.fullScreen ? GameLanguage.Text("on") : GameLanguage.Text("off")), panel.transform, new Vector2(0, -275), new Vector2(300, 48));
@@ -81,8 +82,8 @@ public sealed class TitleSettingsPanel : MonoBehaviour
 
         Build(font);
     }
-    private void ChangeResolution(int direction) { var resolutions = Screen.resolutions; resolutionIndex = (resolutionIndex + direction + resolutions.Length) % resolutions.Length; var r = resolutions[resolutionIndex]; Screen.SetResolution(r.width, r.height, Screen.fullScreenMode, r.refreshRateRatio); }
-    private string ResolutionName() { var r = Screen.resolutions[resolutionIndex]; return r.width + " x " + r.height; }
+    private void ChangeResolution(int direction) { var resolutions = Screen.resolutions; if (resolutions == null || resolutions.Length == 0) return; resolutionIndex = Mathf.Clamp(resolutionIndex, 0, resolutions.Length - 1); resolutionIndex = (resolutionIndex + direction + resolutions.Length) % resolutions.Length; var r = resolutions[resolutionIndex]; Screen.SetResolution(r.width, r.height, Screen.fullScreenMode, r.refreshRateRatio); }
+    private string ResolutionName() { var resolutions = Screen.resolutions; if (resolutions == null || resolutions.Length == 0) return Screen.width + " x " + Screen.height; resolutionIndex = Mathf.Clamp(resolutionIndex, 0, resolutions.Length - 1); var r = resolutions[resolutionIndex]; return r.width + " x " + r.height; }
     private static string Percent(float value) => Mathf.RoundToInt(value * 100) + "%";
     private GameObject Box(string name, Transform parent, Vector2 size, Vector2 pos, Color color) { var o = new GameObject(name, typeof(RectTransform), typeof(Image)); o.transform.SetParent(parent, false); var r=o.GetComponent<RectTransform>(); r.anchorMin=r.anchorMax=new Vector2(.5f,.5f); r.sizeDelta=size; r.anchoredPosition=pos; o.GetComponent<Image>().color=color; return o; }
     private TextMeshProUGUI Text(string value, Transform parent, float size, Vector2 pos, Vector2 dimensions, Color color, TextAlignmentOptions alignment = TextAlignmentOptions.Center) { var o=new GameObject("Text",typeof(RectTransform)); o.transform.SetParent(parent,false); var r=o.GetComponent<RectTransform>(); r.anchorMin=r.anchorMax=new Vector2(.5f,.5f); r.sizeDelta=dimensions; r.anchoredPosition=pos; var t=o.AddComponent<TextMeshProUGUI>(); t.font=font; t.text=value; t.fontSize=size; t.fontStyle=FontStyles.Bold; t.color=color; t.alignment=alignment; t.textWrappingMode=TextWrappingModes.NoWrap; return t; }

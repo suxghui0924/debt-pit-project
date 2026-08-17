@@ -43,6 +43,9 @@ public static class GameSaveService
         for (int index = 0; index < ItemInventoryService.MaxSlots; index++) PlayerPrefs.DeleteKey("Inventory.Slot." + index);
         ItemInventoryService.AddStarterDeliveries();
         PlayerPrefs.SetInt(IntroSeenKey, 0);
+        GameDayClock.ResetSavedClock();
+        GameplayUiController.ResetSavedNightMarket();
+        ComputerRadioPlayer.ResetSavedPlayback();
         PlayerPrefs.Save();
     }
 
@@ -52,6 +55,7 @@ public static class GameSaveService
         PlayerPrefs.SetInt(DayKey, Mathf.Max(1, day));
         PlayerPrefs.SetInt(LaborKey, Mathf.Max(0, labor));
         PlayerPrefs.SetInt(DebtKey, Mathf.Max(0, debt));
+        GameDayClock.SaveClock();
         PlayerPrefs.Save();
     }
 

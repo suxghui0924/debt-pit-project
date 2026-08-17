@@ -6,7 +6,7 @@ public sealed class StoryIntroController : MonoBehaviour
 {
     public static bool IsPlaying { get; private set; }
 
-    private static readonly string[] Pages =
+    private static readonly string[] KoreanPages =
     {
         "…기록을 불러옵니다.\n\n피수용자 식별명: 삭제됨.",
         "당신은 이름을 잃었다.\n사회에 남긴 죄의 대가로, 기억 제거 처분을 받았다.",
@@ -19,6 +19,22 @@ public sealed class StoryIntroController : MonoBehaviour
         "…단, 이전 수용자들도 같은 문장을 들었다.\n그들의 이름은 모두 삭제되어 있다.",
         "첫 번째 청구까지 남은 시간: 23:59:59\n\nDAY 1이 시작된다."
     };
+
+    private static readonly string[] EnglishPages =
+    {
+        "…LOADING RECORD.\n\nDETAINEE IDENTIFIER: DELETED.",
+        "You have lost your name.\nFor the crime you left upon society, you were sentenced to memory removal.",
+        "You open your eyes in DEBT PIT.\nAn underground detention block with no windows, clocks, or exit signs.",
+        "You are not a prisoner here.\nYou are a debtor who must purchase the right to remain alive each day.",
+        "At midnight, the facility charges your daily labor fee.\nDebtors who fail to pay do not see the next day.",
+        "Labor is the only currency here.\nSell at the shop, transfer it by computer, or leave it to chance if you must.",
+        "Check the delivery chute at the end of the corridor.\nApproved purchases and daily supplies arrive there.",
+        "And remember: the facility does not lie.\nComplete the Freedom Fund, and you may leave this place.",
+        "…But every prisoner before you heard the same sentence.\nAll of their names have been deleted.",
+        "TIME UNTIL FIRST PAYMENT: 23:59:59\n\nDAY 1 BEGINS."
+    };
+
+    private static string[] Pages => GameLanguage.IsEnglish ? EnglishPages : KoreanPages;
 
     private int pageIndex;
     private TextMeshProUGUI body;
@@ -137,7 +153,7 @@ public sealed class StoryIntroController : MonoBehaviour
             StopCoroutine(typingRoutine);
             body.text = Pages[pageIndex];
             isTyping = false;
-            continueLabel.text = "[ 클릭 또는 SPACE ]";
+            continueLabel.text = GameLanguage.IsEnglish ? "[ CLICK OR SPACE ]" : "[ 클릭 또는 SPACE ]";
             return;
         }
 
@@ -172,7 +188,9 @@ public sealed class StoryIntroController : MonoBehaviour
         }
 
         isTyping = false;
-        continueLabel.text = pageIndex == Pages.Length - 1 ? "[ 클릭 또는 SPACE : 시작 ]" : "[ 클릭 또는 SPACE : 계속 ]";
+        continueLabel.text = GameLanguage.IsEnglish
+            ? pageIndex == Pages.Length - 1 ? "[ CLICK OR SPACE : BEGIN ]" : "[ CLICK OR SPACE : CONTINUE ]"
+            : pageIndex == Pages.Length - 1 ? "[ 클릭 또는 SPACE : 시작 ]" : "[ 클릭 또는 SPACE : 계속 ]";
     }
 
     private static GameObject ImageObject(string name, Transform parent, Color color)
@@ -193,7 +211,7 @@ public sealed class StoryIntroController : MonoBehaviour
         rect.anchoredPosition = position;
         TextMeshProUGUI label = textObject.AddComponent<TextMeshProUGUI>();
         label.font = TMP_Settings.defaultFontAsset;
-        label.text = text;
+        label.text = GameLanguage.Runtime(text);
         label.fontSize = fontSize;
         label.alignment = TextAlignmentOptions.Center;
         label.color = color;

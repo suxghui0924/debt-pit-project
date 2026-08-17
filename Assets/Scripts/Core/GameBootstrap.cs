@@ -34,7 +34,19 @@ public sealed class GameBootstrap : Singleton<GameBootstrap>
         if (isTransitioningToTitle) return;
 
         isTransitioningToTitle = true;
+        ReleaseIntroVideo(source);
         SceneFade.Load(TitleSceneName);
+    }
+
+    private void ReleaseIntroVideo(VideoPlayer source)
+    {
+        if (source == null) return;
+        source.loopPointReached -= LoadTitleScene;
+        source.Stop();
+        source.targetTexture = null;
+        source.clip = null;
+        source.enabled = false;
+        introVideoPlayer = null;
     }
 
     private static void EnsureManager<T>(string objectName) where T : Component

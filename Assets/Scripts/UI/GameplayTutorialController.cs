@@ -166,10 +166,14 @@ public sealed class GameplayTutorialController : MonoBehaviour
     {
         string page = pages[pageIndex];
         int split = page.IndexOf('\n');
-        titleLabel.text = split >= 0 ? page[..split] : "시설 안내";
+        titleLabel.text = split >= 0 ? page[..split] : GameLanguage.IsEnglish ? "FACILITY GUIDE" : "시설 안내";
         bodyLabel.text = split >= 0 ? page[(split + 1)..] : page;
-        stepLabel.text = topic == "gameplay" ? $"기본 교육  {pageIndex + 1} / {pages.Length}" : "신규 시스템 안내";
-        continueLabel.text = pageIndex == pages.Length - 1 ? "[ 확인 : 닫기 ]" : "[ 클릭 / SPACE / ENTER : 다음 ]";
+        stepLabel.text = GameLanguage.IsEnglish
+            ? topic == "gameplay" ? $"BASIC TRAINING  {pageIndex + 1} / {pages.Length}" : "NEW SYSTEM GUIDE"
+            : topic == "gameplay" ? $"기본 교육  {pageIndex + 1} / {pages.Length}" : "신규 시스템 안내";
+        continueLabel.text = GameLanguage.IsEnglish
+            ? pageIndex == pages.Length - 1 ? "[ CONFIRM : CLOSE ]" : "[ CLICK / SPACE / ENTER : NEXT ]"
+            : pageIndex == pages.Length - 1 ? "[ 확인 : 닫기 ]" : "[ 클릭 / SPACE / ENTER : 다음 ]";
     }
 
     private void Next()
@@ -221,7 +225,18 @@ public sealed class GameplayTutorialController : MonoBehaviour
         if (activeInstance == this || ownsPlayback) EndPlayback();
     }
 
-    private static string[] MainPages() => new[]
+    private static string[] MainPages() => GameLanguage.IsEnglish ? new[]
+    {
+        "THE PURPOSE OF DEBT PIT\nEarn labor each day and pay the survival charge. Fill the Freedom Fund to 100,000,000 to leave the facility.",
+        "DAYS AND EXECUTION\nA day lasts about five real minutes. Failure to pay by midnight results in execution and invalidates the current save.",
+        "PAY THROUGH THE COMPUTER\nSimply holding enough labor does not count. Open the computer and confirm payment in the DAILY PAYMENT application.",
+        "PRISONER TERMINAL\nManage daily payments, the Freedom Fund, rewards, card and tool shops, upgrades, risk games, and ending the day.",
+        "DELIVERY AND INVENTORY\nComputer and night-market purchases arrive at the chute. Press E and collect one item or collect everything that fits.",
+        "WORKBENCH AND MINIGAMES\nOpen card packs and loot boxes at the workbench. Every pack level has its own security protocol and difficulty.",
+        "SHOP AND NIGHT MARKET\nNegotiate individual sales or sell everything at base value. Night-market stock changes every minute; repeated rerolls become expensive.",
+        "LEVELS AND GROWTH\nOpening packs and selling goods grants EXP. Higher levels unlock more valuable packs and cards with better odds.",
+        "CONTROLS\nE: interact · 1–0/wheel: select inventory · ESC: close UI · SPACE: minigame action. New systems explain themselves when first encountered."
+    } : new[]
     {
         "DEBT PIT의 목적\n당신은 매일 노동값을 벌어 생존 청구액을 내야 합니다. 남은 돈을 자유 기금 100,000,000까지 채우면 시설을 나갈 수 있습니다.",
         "하루와 사형 규칙\n하루는 현실 시간 약 5분입니다. 자정까지 일일 노동값을 내지 않으면 처형되고 현재 저장은 무효화됩니다.",
@@ -234,7 +249,16 @@ public sealed class GameplayTutorialController : MonoBehaviour
         "조작 안내\nE: 상호작용 · 1~0/휠: 인벤토리 선택 · ESC: UI 닫기 · SPACE: 미니게임 판정. 새로운 시스템은 처음 만날 때 추가 설명이 표시됩니다."
     };
 
-    private static string[] ContextPages(string context) => context switch
+    private static string[] ContextPages(string context) => GameLanguage.IsEnglish ? context switch
+    {
+        "computer" => new[] { "PRISONER TERMINAL\nToday's payment must be processed manually in the DAILY PAYMENT app. The terminal also manages the Freedom Fund, purchases, and ending the day." },
+        "night_market" => new[] { "NIGHT-MARKET STOCK\nThree loot boxes refresh automatically every 60 seconds. Instant rerolls are available, but their price rises rapidly during the same day." },
+        "card_pack" => new[] { "CARD-PACK SECURITY\nEach pack tier has a different minigame, speed, and success window. Greater accuracy provides an additional chance for higher-rarity cards." },
+        "lockpick" => new[] { "LOCKPICK TIMING\nPress SPACE while the marker is inside the green zone. Rarer containers have narrower success zones." },
+        "drill" => new[] { "DRILL HEAT\nHolding SPACE increases drilling progress and heat; releasing it cools the drill. Reach 100% before overheating." },
+        "cutter" => new[] { "HYDRAULIC CUTTER\nAn expensive single-use tool that opens a container without a minigame. Save it for rare containers." },
+        _ => null
+    } : context switch
     {
         "computer" => new[] { "수용자 컴퓨터\n오늘 납부액은 반드시 ‘일일 납부’ 앱에서 직접 처리하십시오. 자유 기금 송금과 상품 구매, 하루 넘기기도 이 단말기에서 실행합니다." },
         "night_market" => new[] { "야시장 재고\n가챠 상자 3종이 60초마다 자동 갱신됩니다. 즉시 리롤도 가능하지만 같은 날 반복할수록 비용이 빠르게 증가합니다." },
@@ -260,7 +284,7 @@ public sealed class GameplayTutorialController : MonoBehaviour
         SetRect(item.GetComponent<RectTransform>(), position, size);
         TextMeshProUGUI text = item.AddComponent<TextMeshProUGUI>();
         text.font = TMP_Settings.defaultFontAsset;
-        text.text = value;
+        text.text = GameLanguage.Runtime(value);
         text.fontSize = fontSize;
         text.color = color;
         text.alignment = TextAlignmentOptions.Center;

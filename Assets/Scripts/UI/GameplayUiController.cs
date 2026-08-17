@@ -88,6 +88,11 @@ public sealed class GameplayUiController : MonoBehaviour
     private int nightMarketSeed;
     private int nightMarketRerolls;
     private int nightMarketDay;
+    private float nextNightMarketSaveAt;
+    private const string NightMarketDayKey = "Save.NightMarket.Day";
+    private const string NightMarketSeedKey = "Save.NightMarket.Seed";
+    private const string NightMarketRerollsKey = "Save.NightMarket.Rerolls";
+    private const string NightMarketRemainingKey = "Save.NightMarket.Remaining";
     private static readonly string[] NightMarketBoxes =
     {
         "녹슨 가챠 상자", "보급 가챠 상자", "봉인된 상자", "군수 가챠 상자", "검은 금고"
@@ -100,6 +105,15 @@ public sealed class GameplayUiController : MonoBehaviour
         "기억 파편 공명", "보안 열쇠 수직 해독", "설계도 회전 복호", "판결문 잉크 충전", "탈출 경로 노트북 침투",
         "감독관 금고 주파수", "삭제 신원 생체 스캔", "중앙 서버 위상 잠금", "자유 채권 전하 서명", "집행 유예망 관리자 해킹",
         "기억 원본 신경 동기화", "정부 계정 심층 스캔", "시설 소유권 양자 다이얼", "면책 계약 코어 충전", "황금 자유계약 루트 해킹"
+    };
+    private static readonly string[] PackProtocolNamesEnglish =
+    {
+        "WASTE MAGSTRIPE ALIGNMENT", "IRON GATE VERTICAL SCAN", "NIGHT RATION ROTARY SEAL", "SHIFT POWER STABILIZATION", "MAINTENANCE TERMINAL BREACH",
+        "SURVEILLANCE WAVE SYNC", "RECEIPT OPTICAL TRACE", "EMERGENCY POWER PHASE", "CENSORED MAIL CHARGE", "DISPOSAL NETWORK BYPASS",
+        "UNDERGROUND SIGNAL TRACE", "QUARANTINE LASER ALIGNMENT", "CIPHER LEDGER DIAL", "AUTHORITY VOLTAGE CHECK", "BLACK MARKET PORT HACK",
+        "MEMORY FRAGMENT RESONANCE", "SECURITY KEY DECODE", "BLUEPRINT ROTARY DECRYPTION", "VERDICT INK CHARGE", "ESCAPE ROUTE TERMINAL BREACH",
+        "WARDEN VAULT FREQUENCY", "DELETED IDENTITY BIOMETRIC SCAN", "CENTRAL SERVER PHASE LOCK", "FREEDOM BOND CHARGE SIGNATURE", "STAY-OF-EXECUTION ADMIN HACK",
+        "ORIGINAL MEMORY NEURAL SYNC", "GOVERNMENT ACCOUNT DEEP SCAN", "FACILITY OWNERSHIP QUANTUM DIAL", "IMMUNITY CONTRACT CORE CHARGE", "GOLDEN FREEDOM ROUTE HACK"
     };
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -139,6 +153,11 @@ public sealed class GameplayUiController : MonoBehaviour
 
     private void Update()
     {
+        if (nightMarketDay > 0 && Time.unscaledTime >= nextNightMarketSaveAt)
+        {
+            nextNightMarketSaveAt = Time.unscaledTime + 5f;
+            SaveNightMarketState();
+        }
         if (pausePanel != null)
         {
             HandlePauseMenuInput();
@@ -163,7 +182,7 @@ public sealed class GameplayUiController : MonoBehaviour
         if (nightMarketTimerLabel != null)
         {
             float marketSeconds = Mathf.Max(0f, nightMarketRefreshAt - Time.unscaledTime);
-            nightMarketTimerLabel.text = $"자동 갱신 {FormatTime(marketSeconds)}";
+            nightMarketTimerLabel.text = GameLanguage.IsEnglish ? $"AUTO REFRESH {FormatTime(marketSeconds)}" : $"자동 갱신 {FormatTime(marketSeconds)}";
             if (marketSeconds <= 0f)
             {
                 AdvanceNightMarketStock();
@@ -268,25 +287,25 @@ public sealed class GameplayUiController : MonoBehaviour
         if (computer != null && computerTrigger != null && computerTrigger.PlayerInside)
         {
             target = computer;
-            action = "컴퓨터 열기";
+            action = GameLanguage.IsEnglish ? "OPEN COMPUTER" : "컴퓨터 열기";
         }
 
         if (shop != null && shopTrigger != null && shopTrigger.PlayerInside)
         {
             target = shop;
-            action = "상점 열기";
+            action = GameLanguage.IsEnglish ? "OPEN SHOP" : "상점 열기";
         }
 
         if (chute != null && chuteTrigger != null && chuteTrigger.PlayerInside)
         {
             target = chute;
-            action = "물건 투입구 열기";
+            action = GameLanguage.IsEnglish ? "OPEN DELIVERY CHUTE" : "물건 투입구 열기";
         }
 
         if (workbench != null && workbenchTrigger != null && workbenchTrigger.PlayerInside)
         {
             target = workbench;
-            action = "작업대 열기";
+            action = GameLanguage.IsEnglish ? "OPEN WORKBENCH" : "작업대 열기";
         }
 
         return target;
@@ -369,10 +388,10 @@ public sealed class GameplayUiController : MonoBehaviour
         int remainingSeconds = Mathf.FloorToInt(seconds % 60f);
         dayLabel.text = $"DAY {GameSaveService.Day:00}";
         levelLabel.text = $"LV {CardProgressionService.Level:00}";
-        timeLabel.text = $"자정까지 {minutes:00}:{remainingSeconds:00}";
-        laborLabel.text = $"보유 노동값   {GameSaveService.Labor:N0}";
-        paymentLabel.text = $"오늘 납부액   {GameDayClock.DailyLaborPayment:N0}";
-        freedomLabel.text = $"자유 기금     {GameSaveService.FreedomFund:N0} / {GameEconomy.FreedomGoal:N0}";
+        timeLabel.text = GameLanguage.IsEnglish ? $"UNTIL MIDNIGHT   {minutes:00}:{remainingSeconds:00}" : $"자정까지 {minutes:00}:{remainingSeconds:00}";
+        laborLabel.text = GameLanguage.IsEnglish ? $"LABOR BALANCE   {GameSaveService.Labor:N0}" : $"보유 노동값   {GameSaveService.Labor:N0}";
+        paymentLabel.text = GameLanguage.IsEnglish ? $"TODAY'S PAYMENT   {GameDayClock.DailyLaborPayment:N0}" : $"오늘 납부액   {GameDayClock.DailyLaborPayment:N0}";
+        freedomLabel.text = GameLanguage.IsEnglish ? $"FREEDOM FUND   {GameSaveService.FreedomFund:N0} / {GameEconomy.FreedomGoal:N0}" : $"자유 기금     {GameSaveService.FreedomFund:N0} / {GameEconomy.FreedomGoal:N0}";
     }
 
     private void SelectSlot(int index)
@@ -396,11 +415,14 @@ public sealed class GameplayUiController : MonoBehaviour
         // 창을 만드는 도중 상황별 튜토리얼이 시작될 수 있으므로 먼저 커서를 해제한다.
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-        if (title.Contains("컴퓨터")) BuildComputerWindow();
+        // The displayed prompt is localized, so it must never be used to decide
+        // which world object was opened. In English "OPEN COMPUTER" did not
+        // contain the Korean discriminator and incorrectly fell through to Shop.
+        if (target == computer) BuildComputerWindow();
         else if (target == chute) BuildChuteWindow();
         else if (target == workbench) BuildWorkbenchWindow();
         else BuildShopWindow();
-        if (terminalPanel != null) StartCoroutine(UiOpenAnimator.Play(terminalPanel, title.Contains("컴퓨터")));
+        if (terminalPanel != null) StartCoroutine(UiOpenAnimator.Play(terminalPanel, target == computer));
     }
 
     public void CloseForSystemTransition()
@@ -502,7 +524,7 @@ public sealed class GameplayUiController : MonoBehaviour
         {
             if (slotLabels[index] == null) continue;
             string item = ItemInventoryService.GetItem(index);
-            slotLabels[index].text = string.IsNullOrEmpty(item) ? "-" : item;
+            slotLabels[index].text = string.IsNullOrEmpty(item) ? "-" : GameLanguage.Item(item);
             slotLabels[index].fontSize = string.IsNullOrEmpty(item) ? 16 : 10;
         }
     }
@@ -512,17 +534,17 @@ public sealed class GameplayUiController : MonoBehaviour
         terminalPanel = ImageObject("DEBT PIT Desktop", transform.GetComponentInChildren<Canvas>().transform, new Color(0f, .5f, .5f, 1));
         Stretch(terminalPanel.GetComponent<RectTransform>());
 
-        CreateDesktopIcon("내 컴퓨터", terminalPanel.transform, new Vector2(-835, 360), "PC", () => OpenAppWindow("내 컴퓨터"));
-        CreateDesktopIcon("채무 계정", terminalPanel.transform, new Vector2(-835, 225), "AC", () => OpenAppWindow("채무 계정"));
-        CreateDesktopIcon("물건 투입구", terminalPanel.transform, new Vector2(-835, 90), "IN", () => OpenAppWindow("물건 투입구"));
-        CreateDesktopIcon("도박 앱", terminalPanel.transform, new Vector2(-835, -45), "GM", () => OpenAppWindow("위험 게임"));
-        CreateDesktopIcon("도움 앱", terminalPanel.transform, new Vector2(-835, -180), "?", () => OpenAppWindow("도움말"));
-        CreateDesktopIcon("데일리 보상", terminalPanel.transform, new Vector2(-690, 360), "DR", () => OpenAppWindow("데일리 보상"));
-        CreateDesktopIcon("카드 상점", terminalPanel.transform, new Vector2(-690, 225), "CS", () => OpenAppWindow("카드 상점"));
-        CreateDesktopIcon("업그레이드", terminalPanel.transform, new Vector2(-690, 90), "UP", () => OpenAppWindow("업그레이드 상점"));
-        CreateDesktopIcon("도구 상점", terminalPanel.transform, new Vector2(-690, -45), "TL", () => OpenAppWindow("도구 상점"));
-        CreateDesktopIcon("하루 종료", terminalPanel.transform, new Vector2(-690, -180), "SK", () => OpenAppWindow("하루 넘기기"));
-        CreateDesktopIcon("라디오", terminalPanel.transform, new Vector2(-545, 360), "RD", () => OpenAppWindow("라디오"));
+        CreateDesktopIcon(L("내 컴퓨터", "MY COMPUTER"), terminalPanel.transform, new Vector2(-835, 360), "PC", () => OpenAppWindow("내 컴퓨터"));
+        CreateDesktopIcon(L("채무 계정", "DEBT ACCOUNT"), terminalPanel.transform, new Vector2(-835, 225), "AC", () => OpenAppWindow("채무 계정"));
+        CreateDesktopIcon(L("물건 투입구", "DELIVERY CHUTE"), terminalPanel.transform, new Vector2(-835, 90), "IN", () => OpenAppWindow("물건 투입구"));
+        CreateDesktopIcon(L("도박 앱", "RISK GAME"), terminalPanel.transform, new Vector2(-835, -45), "GM", () => OpenAppWindow("위험 게임"));
+        CreateDesktopIcon(L("도움 앱", "HELP"), terminalPanel.transform, new Vector2(-835, -180), "?", () => OpenAppWindow("도움말"));
+        CreateDesktopIcon(L("데일리 보상", "DAILY REWARD"), terminalPanel.transform, new Vector2(-690, 360), "DR", () => OpenAppWindow("데일리 보상"));
+        CreateDesktopIcon(L("카드 상점", "CARD SHOP"), terminalPanel.transform, new Vector2(-690, 225), "CS", () => OpenAppWindow("카드 상점"));
+        CreateDesktopIcon(L("업그레이드", "UPGRADES"), terminalPanel.transform, new Vector2(-690, 90), "UP", () => OpenAppWindow("업그레이드 상점"));
+        CreateDesktopIcon(L("도구 상점", "TOOL SHOP"), terminalPanel.transform, new Vector2(-690, -45), "TL", () => OpenAppWindow("도구 상점"));
+        CreateDesktopIcon(L("하루 종료", "END DAY"), terminalPanel.transform, new Vector2(-690, -180), "SK", () => OpenAppWindow("하루 넘기기"));
+        CreateDesktopIcon(L("라디오", "RADIO"), terminalPanel.transform, new Vector2(-545, 360), "RD", () => OpenAppWindow("라디오"));
 
         GameObject window = ImageObject("Prisoner Terminal Window", terminalPanel.transform, new Color(.75f, .75f, .75f, 1));
         SetRect(window.GetComponent<RectTransform>(), new Vector2(0, 25), new Vector2(1110, 680));
@@ -540,7 +562,7 @@ public sealed class GameplayUiController : MonoBehaviour
 
         GameObject menu = ImageObject("Menu", window.transform, new Color(.75f, .75f, .75f, 1));
         SetRect(menu.GetComponent<RectTransform>(), new Vector2(0, 275), new Vector2(1080, 27));
-        Text("파일(F)     편집(E)     계정(A)     결제(P)     도움말(H)", menu.transform, new Vector2(-170, 0), new Vector2(700, 24), 16, Color.black).alignment = TextAlignmentOptions.Left;
+        Text(L("파일(F)     편집(E)     계정(A)     결제(P)     도움말(H)", "FILE(F)     EDIT(E)     ACCOUNT(A)     PAYMENT(P)     HELP(H)"), menu.transform, new Vector2(-170, 0), new Vector2(700, 24), 16, Color.black).alignment = TextAlignmentOptions.Left;
 
         GameObject body = ImageObject("Window Body", window.transform, new Color(.75f, .75f, .75f, 1));
         SetRect(body.GetComponent<RectTransform>(), new Vector2(0, -12), new Vector2(1080, 542));
@@ -625,11 +647,14 @@ public sealed class GameplayUiController : MonoBehaviour
         if (app == "물건 투입구")
         {
             Text("DELIVERY CHUTE MONITOR", page, new Vector2(0, 135), new Vector2(570, 34), 25, new Color(.05f, .19f, .34f, 1));
-            Text("수령 대기 물품", page, new Vector2(-205, 72), new Vector2(220, 28), 20, Color.black).alignment = TextAlignmentOptions.Left;
+            Text(L("수령 대기 물품", "PENDING DELIVERIES"), page, new Vector2(-205, 72), new Vector2(260, 28), 20, Color.black).alignment = TextAlignmentOptions.Left;
             GameObject status = ImageObject("Delivery Status", page, new Color(.84f, .9f, .92f, 1));
             SetRect(status.GetComponent<RectTransform>(), new Vector2(0, 0), new Vector2(570, 104));
-            Text(ItemInventoryService.DeliveryCount == 0 ? "대기 중인 배송이 없습니다.\n데일리 상품과 구매 물품은 이곳으로 도착합니다." : $"현재 {ItemInventoryService.DeliveryCount}개의 물품이 도착해 있습니다.\n복도 끝 물건 투입구에서 직접 수령하십시오.", status.transform, Vector2.zero, new Vector2(520, 80), 19, new Color(.05f, .12f, .18f, 1));
-            CreateWindowButton("수령함 확인", page, new Vector2(175, -135), new Vector2(150, 40));
+            string deliveryStatus = ItemInventoryService.DeliveryCount == 0
+                ? L("대기 중인 배송이 없습니다.\n데일리 상품과 구매 물품은 이곳으로 도착합니다.", "NO DELIVERIES ARE PENDING.\nDAILY AND PURCHASED ITEMS ARRIVE HERE.")
+                : L($"현재 {ItemInventoryService.DeliveryCount}개의 물품이 도착해 있습니다.\n복도 끝 물건 투입구에서 직접 수령하십시오.", $"{ItemInventoryService.DeliveryCount} ITEMS HAVE ARRIVED.\nCOLLECT THEM AT THE CHUTE IN THE CORRIDOR.");
+            Text(deliveryStatus, status.transform, Vector2.zero, new Vector2(520, 80), 19, new Color(.05f, .12f, .18f, 1));
+            CreateWindowButton(L("수령함 확인", "VIEW DELIVERY QUEUE"), page, new Vector2(175, -135), new Vector2(190, 40));
             return;
         }
 
@@ -637,24 +662,24 @@ public sealed class GameplayUiController : MonoBehaviour
         {
             int bet = CurrentRiskBet;
             Text("DEBT PIT // RISK GAME", page, new Vector2(0, 142), new Vector2(560, 36), 28, ink);
-            Text(riskMessage, page, new Vector2(0, 85), new Vector2(560, 30), 20, new Color(.9f, .8f, .78f, 1));
-            Text($"베팅 금액  {bet:N0} 노동값", page, new Vector2(0, 28), new Vector2(360, 34), 22, Color.white);
+            Text(GameLanguage.Runtime(riskMessage), page, new Vector2(0, 85), new Vector2(560, 30), 20, new Color(.9f, .8f, .78f, 1));
+            Text(L($"베팅 금액  {bet:N0} 노동값", $"BET  {bet:N0} LABOR"), page, new Vector2(0, 28), new Vector2(360, 34), 22, Color.white);
             CreateWindowButton("-", page, new Vector2(-225, 28), new Vector2(54, 42)).onClick.AddListener(() => AdjustRiskBet(-1, page.parent.gameObject));
             CreateWindowButton("+", page, new Vector2(225, 28), new Vector2(54, 42)).onClick.AddListener(() => AdjustRiskBet(1, page.parent.gameObject));
-            Text($"당첨 배율  x{UpgradeService.RiskPayoutMultiplier:0.0}", page, new Vector2(0, -12), new Vector2(360, 24), 16, new Color(.82f, .52f, .48f, 1));
-            Button play = CreateWindowButton("게임 시작", page, new Vector2(0, -72), new Vector2(190, 52));
+            Text(L($"당첨 배율  x{UpgradeService.RiskPayoutMultiplier:0.0}", $"WIN MULTIPLIER  x{UpgradeService.RiskPayoutMultiplier:0.0}"), page, new Vector2(0, -12), new Vector2(360, 24), 16, new Color(.82f, .52f, .48f, 1));
+            Button play = CreateWindowButton(L("게임 시작", "START GAME"), page, new Vector2(0, -72), new Vector2(190, 52));
             play.image.color = new Color(.75f, .08f, .06f, 1);
             play.onClick.AddListener(() => PlayRiskGame(page.parent.gameObject));
-            Text("주의: 손실은 복구할 수 없습니다.", page, new Vector2(0, -145), new Vector2(520, 30), 17, new Color(.9f, .4f, .35f, 1));
+            Text(L("주의: 손실은 복구할 수 없습니다.", "WARNING: LOSSES CANNOT BE RECOVERED."), page, new Vector2(0, -145), new Vector2(520, 30), 17, new Color(.9f, .4f, .35f, 1));
             return;
         }
 
         if (app == "도움말")
         {
-            Text("도움말", page, new Vector2(-100, 140), new Vector2(450, 36), 27, new Color(0f, .08f, .48f, 1)).alignment = TextAlignmentOptions.Left;
-            Text("DEBT PIT 생활 안내", page, new Vector2(-100, 88), new Vector2(450, 30), 21, Color.black).alignment = TextAlignmentOptions.Left;
-            Text("1. 자정 전까지 컴퓨터에서 일일 노동값을 납부합니다.\n2. 구매 물품은 물건 투입구에서 수령합니다.\n3. 작업대에서 카드팩과 봉인 상자를 개봉합니다.\n4. 잉여 노동값은 자유 기금에 납부할 수 있습니다.", page, new Vector2(-100, 2), new Vector2(500, 145), 18, Color.black).alignment = TextAlignmentOptions.TopLeft;
-            Button replay = CreateWindowButton("기본 튜토리얼 다시 보기", page, new Vector2(-55, -150), new Vector2(250, 38));
+            Text(L("도움말", "HELP"), page, new Vector2(-100, 140), new Vector2(450, 36), 27, new Color(0f, .08f, .48f, 1)).alignment = TextAlignmentOptions.Left;
+            Text(L("DEBT PIT 생활 안내", "DEBT PIT SURVIVAL GUIDE"), page, new Vector2(-100, 88), new Vector2(450, 30), 21, Color.black).alignment = TextAlignmentOptions.Left;
+            Text(L("1. 자정 전까지 컴퓨터에서 일일 노동값을 납부합니다.\n2. 구매 물품은 물건 투입구에서 수령합니다.\n3. 작업대에서 카드팩과 봉인 상자를 개봉합니다.\n4. 잉여 노동값은 자유 기금에 납부할 수 있습니다.", "1. PAY THE DAILY LABOR CHARGE BEFORE MIDNIGHT.\n2. COLLECT PURCHASES FROM THE DELIVERY CHUTE.\n3. OPEN CARD PACKS AND SEALED BOXES AT THE WORKBENCH.\n4. DEPOSIT SURPLUS LABOR INTO THE FREEDOM FUND."), page, new Vector2(-100, 2), new Vector2(540, 145), 18, Color.black).alignment = TextAlignmentOptions.TopLeft;
+            Button replay = CreateWindowButton(L("기본 튜토리얼 다시 보기", "REPLAY TUTORIAL"), page, new Vector2(-55, -150), new Vector2(250, 38));
             replay.onClick.AddListener(() =>
             {
                 Destroy(page.parent.gameObject);
@@ -669,7 +694,7 @@ public sealed class GameplayUiController : MonoBehaviour
             int remainingFund = Mathf.Max(0, GameEconomy.FreedomGoal - GameSaveService.FreedomFund);
             int maxPayment = Mathf.Min(GameSaveService.Labor, remainingFund);
             Text("FREEDOM FUND", page, new Vector2(0, 142), new Vector2(560, 38), 28, new Color(0f, .08f, .48f, 1));
-            Text($"현재 적립금  {GameSaveService.FreedomFund:N0} / {GameEconomy.FreedomGoal:N0}", page, new Vector2(0, 99), new Vector2(560, 30), 21, Color.black);
+            Text(L($"현재 적립금  {GameSaveService.FreedomFund:N0} / {GameEconomy.FreedomGoal:N0}", $"CURRENT FUND  {GameSaveService.FreedomFund:N0} / {GameEconomy.FreedomGoal:N0}"), page, new Vector2(0, 99), new Vector2(560, 30), 21, Color.black);
             GameObject track = ImageObject("Fund Progress", page, new Color(.24f, .24f, .24f, 1));
             SetRect(track.GetComponent<RectTransform>(), new Vector2(0, 58), new Vector2(560, 26));
             float ratio = Mathf.Clamp01((float)GameSaveService.FreedomFund / GameEconomy.FreedomGoal);
@@ -680,15 +705,15 @@ public sealed class GameplayUiController : MonoBehaviour
             fillRect.pivot = new Vector2(0, .5f);
             fillRect.sizeDelta = new Vector2(ratio > 0f ? Mathf.Max(4f, 552 * ratio) : 0f, 18);
             fillRect.anchoredPosition = new Vector2(4, 0);
-            Text($"보유 노동값  {GameSaveService.Labor:N0}     ·     남은 목표  {remainingFund:N0}", page, new Vector2(0, 22), new Vector2(560, 26), 17, Color.black);
+            Text(L($"보유 노동값  {GameSaveService.Labor:N0}     ·     남은 목표  {remainingFund:N0}", $"LABOR BALANCE  {GameSaveService.Labor:N0}     ·     REMAINING  {remainingFund:N0}"), page, new Vector2(0, 22), new Vector2(560, 26), 17, Color.black);
 
-            TMP_InputField amountInput = CreateNumericInput("납부 금액", page, new Vector2(0, -25), new Vector2(350, 42));
+            TMP_InputField amountInput = CreateNumericInput(L("납부 금액", "PAYMENT AMOUNT"), page, new Vector2(0, -25), new Vector2(350, 42));
             CreateWindowButton("25%", page, new Vector2(-170, -76), new Vector2(96, 34)).onClick.AddListener(() => SetFundInputFraction(amountInput, maxPayment, .25f));
             CreateWindowButton("50%", page, new Vector2(-57, -76), new Vector2(96, 34)).onClick.AddListener(() => SetFundInputFraction(amountInput, maxPayment, .5f));
-            CreateWindowButton("전액", page, new Vector2(57, -76), new Vector2(96, 34)).onClick.AddListener(() => amountInput.text = maxPayment.ToString());
-            CreateWindowButton("초기화", page, new Vector2(170, -76), new Vector2(96, 34)).onClick.AddListener(() => amountInput.text = string.Empty);
+            CreateWindowButton(L("전액", "MAX"), page, new Vector2(57, -76), new Vector2(96, 34)).onClick.AddListener(() => amountInput.text = maxPayment.ToString());
+            CreateWindowButton(L("초기화", "CLEAR"), page, new Vector2(170, -76), new Vector2(96, 34)).onClick.AddListener(() => amountInput.text = string.Empty);
 
-            Button pay = CreateWindowButton("입력 금액 납부", page, new Vector2(0, -132), new Vector2(210, 43));
+            Button pay = CreateWindowButton(L("입력 금액 납부", "SUBMIT PAYMENT"), page, new Vector2(0, -132), new Vector2(210, 43));
             pay.onClick.AddListener(() => PayFreedomFundFromInput(amountInput.text, page.parent.gameObject));
             return;
         }
@@ -696,9 +721,12 @@ public sealed class GameplayUiController : MonoBehaviour
         if (app == "일일 납부")
         {
             Text("DAILY PAYMENT NOTICE", page, new Vector2(0, 140), new Vector2(560, 36), 27, new Color(.42f, .02f, .02f, 1));
-            Text("오늘의 생존 청구서", page, new Vector2(-205, 80), new Vector2(250, 28), 20, Color.black).alignment = TextAlignmentOptions.Left;
-            Text($"청구 금액                         {GameDayClock.DailyLaborPayment:N0}\n보유 노동값                       {GameSaveService.Labor:N0}\n상태                              {(GameSaveService.DailyPaymentPaid ? "납부 완료" : "미납")}", page, new Vector2(0, 5), new Vector2(540, 110), 20, Color.black).alignment = TextAlignmentOptions.TopLeft;
-            Button pay = CreateWindowButton(GameSaveService.DailyPaymentPaid ? "납부 완료" : "납부 실행", page, new Vector2(180, -132), new Vector2(150, 42));
+            Text(L("오늘의 생존 청구서", "TODAY'S SURVIVAL INVOICE"), page, new Vector2(-185, 80), new Vector2(290, 28), 20, Color.black).alignment = TextAlignmentOptions.Left;
+            string invoice = GameLanguage.IsEnglish
+                ? $"AMOUNT DUE                         {GameDayClock.DailyLaborPayment:N0}\nLABOR BALANCE                      {GameSaveService.Labor:N0}\nSTATUS                             {(GameSaveService.DailyPaymentPaid ? "PAID" : "UNPAID")}"
+                : $"청구 금액                         {GameDayClock.DailyLaborPayment:N0}\n보유 노동값                       {GameSaveService.Labor:N0}\n상태                              {(GameSaveService.DailyPaymentPaid ? "납부 완료" : "미납")}";
+            Text(invoice, page, new Vector2(0, 5), new Vector2(540, 110), 20, Color.black).alignment = TextAlignmentOptions.TopLeft;
+            Button pay = CreateWindowButton(GameSaveService.DailyPaymentPaid ? L("납부 완료", "PAID") : L("납부 실행", "PAY NOW"), page, new Vector2(180, -132), new Vector2(150, 42));
             pay.onClick.AddListener(() => PayDailyLaborInApp(page.parent.gameObject));
             return;
         }
@@ -706,7 +734,7 @@ public sealed class GameplayUiController : MonoBehaviour
         if (app == "데일리 상품")
         {
             Text("DAILY DELIVERY", page, new Vector2(0, 140), new Vector2(560, 36), 27, new Color(.05f, .19f, .34f, 1));
-            Text("오늘의 공급품", page, new Vector2(-205, 82), new Vector2(260, 28), 20, Color.black).alignment = TextAlignmentOptions.Left;
+            Text(L("오늘의 공급품", "TODAY'S SUPPLIES"), page, new Vector2(-205, 82), new Vector2(260, 28), 20, Color.black).alignment = TextAlignmentOptions.Left;
             for (int i = 0; i < 3; i++)
             {
                 GameObject card = ImageObject("Daily Item", page, new Color(.84f, .9f, .92f, 1));
@@ -714,21 +742,21 @@ public sealed class GameplayUiController : MonoBehaviour
                 Text(i == 0 ? "작업 장갑" : i == 1 ? "캔 식량" : "잠금 상자", card.transform, new Vector2(0, 20), new Vector2(145, 26), 18, new Color(.05f, .12f, .18f, 1));
                 string itemName = i == 0 ? "작업 장갑" : i == 1 ? "캔 식량" : "잠금 상자";
                 int price = ItemInventoryService.GetValue(itemName);
-                Button buy = CreateWindowButton($"{price:N0} 구매", card.transform, new Vector2(0, -27), new Vector2(120, 30));
+                Button buy = CreateWindowButton(L($"{price:N0} 구매", $"BUY  {price:N0}"), card.transform, new Vector2(0, -27), new Vector2(120, 30));
                 buy.onClick.AddListener(() => BuyComputerItem(itemName, price, page.parent.gameObject));
             }
-            Text("구매한 물품은 물건 투입구에 도착합니다.", page, new Vector2(0, -145), new Vector2(560, 26), 17, Color.black);
+            Text(L("구매한 물품은 물건 투입구에 도착합니다.", "PURCHASED ITEMS ARE SENT TO THE DELIVERY CHUTE."), page, new Vector2(0, -145), new Vector2(560, 26), 17, Color.black);
             return;
         }
 
         if (app == "데일리 보상")
         {
             Text("DAILY SUPPLY", page, new Vector2(0, 140), new Vector2(560, 36), 27, new Color(0f, .08f, .48f, 1));
-            Text($"DAY {GameSaveService.Day:00} 무료 보급", page, new Vector2(0, 78), new Vector2(520, 30), 21, Color.black);
+            Text(L($"DAY {GameSaveService.Day:00} 무료 보급", $"DAY {GameSaveService.Day:00} FREE SUPPLY"), page, new Vector2(0, 78), new Vector2(520, 30), 21, Color.black);
             GameObject reward = ImageObject("Reward", page, new Color(.88f, .91f, .95f, 1));
             SetRect(reward.GetComponent<RectTransform>(), new Vector2(0, 5), new Vector2(500, 100));
-            Text("무료 카드팩  x1\n작업대에서 개봉할 수 있습니다.", reward.transform, Vector2.zero, new Vector2(450, 70), 19, new Color(.04f, .12f, .25f, 1));
-            Button claim = CreateWindowButton(GameSaveService.DailyRewardClaimed ? "오늘 수령 완료" : "투입구로 보내기", page, new Vector2(0, -115), new Vector2(190, 44));
+            Text(L("무료 카드팩  x1\n작업대에서 개봉할 수 있습니다.", "FREE CARD PACK  x1\nOPEN IT AT THE WORKBENCH."), reward.transform, Vector2.zero, new Vector2(450, 70), 19, new Color(.04f, .12f, .25f, 1));
+            Button claim = CreateWindowButton(GameSaveService.DailyRewardClaimed ? L("오늘 수령 완료", "CLAIMED TODAY") : L("투입구로 보내기", "SEND TO CHUTE"), page, new Vector2(0, -115), new Vector2(190, 44));
             claim.interactable = !GameSaveService.DailyRewardClaimed;
             claim.onClick.AddListener(() => ClaimDailyReward(page.parent.gameObject));
             return;
@@ -743,13 +771,13 @@ public sealed class GameplayUiController : MonoBehaviour
         if (app == "도구 상점")
         {
             Text("FACILITY TOOL STORE", page, new Vector2(0, 260), new Vector2(700, 36), 27, new Color(.16f, .27f, .18f, 1));
-            Text("상자와 카드팩 보안 규격에 맞는 도구를 준비하십시오.", page, new Vector2(0, 225), new Vector2(720, 26), 16, Color.black);
-            CreateToolStoreCard("락핀", "타이밍 링\n정밀 해제", 3, new Vector2(-225, 100), page, page.parent.gameObject);
-            CreateToolStoreCard("휴대용 드릴", "과열 관리\n고속 해제", 14, new Vector2(0, 100), page, page.parent.gameObject);
-            CreateToolStoreCard("유압 절단기", "즉시 절단\n확정 해제", 35, new Vector2(225, 100), page, page.parent.gameObject);
-            CreateToolStoreCard("미니 노트북", "해킹 팩 전용\n재사용 가능", 24, new Vector2(-225, -125), page, page.parent.gameObject);
-            CreateToolStoreCard("신호 복호기", "스캔 판정 폭\n보조 장비", 45, new Vector2(0, -125), page, page.parent.gameObject);
-            CreateToolStoreCard("냉각 스프레이", "드릴 과열 시\n예비 소모품", 8, new Vector2(225, -125), page, page.parent.gameObject);
+            Text(L("상자와 카드팩 보안 규격에 맞는 도구를 준비하십시오.", "EQUIP TOOLS MATCHED TO BOX AND CARD-PACK SECURITY."), page, new Vector2(0, 225), new Vector2(720, 26), 16, Color.black);
+            CreateToolStoreCard("락핀", L("타이밍 링\n정밀 해제", "TIMING RING\nPRECISION ENTRY"), 3, new Vector2(-225, 100), page, page.parent.gameObject);
+            CreateToolStoreCard("휴대용 드릴", L("과열 관리\n고속 해제", "HEAT CONTROL\nFAST ENTRY"), 14, new Vector2(0, 100), page, page.parent.gameObject);
+            CreateToolStoreCard("유압 절단기", L("즉시 절단\n확정 해제", "INSTANT CUT\nGUARANTEED ENTRY"), 35, new Vector2(225, 100), page, page.parent.gameObject);
+            CreateToolStoreCard("미니 노트북", L("해킹 팩 전용\n재사용 가능", "HACKING PACKS\nREUSABLE"), 24, new Vector2(-225, -125), page, page.parent.gameObject);
+            CreateToolStoreCard("신호 복호기", L("스캔 판정 폭\n보조 장비", "WIDER SCAN ZONE\nSUPPORT TOOL"), 45, new Vector2(0, -125), page, page.parent.gameObject);
+            CreateToolStoreCard("냉각 스프레이", L("드릴 과열 시\n예비 소모품", "DRILL COOLANT\nCONSUMABLE"), 8, new Vector2(225, -125), page, page.parent.gameObject);
             return;
         }
 
@@ -757,11 +785,14 @@ public sealed class GameplayUiController : MonoBehaviour
         {
             bool paid = GameSaveService.DailyPaymentPaid;
             Text("END OF DAY CONTROL", page, new Vector2(0, 140), new Vector2(600, 36), 27, new Color(.4f, .08f, .04f, 1));
-            Text($"DAY {GameSaveService.Day:00}을 즉시 종료합니다.", page, new Vector2(0, 86), new Vector2(560, 30), 21, Color.black);
+            Text(L($"DAY {GameSaveService.Day:00}을 즉시 종료합니다.", $"END DAY {GameSaveService.Day:00} IMMEDIATELY."), page, new Vector2(0, 86), new Vector2(560, 30), 21, Color.black);
             GameObject warning = ImageObject("Skip Warning", page, paid ? new Color(.86f, .92f, .87f, 1) : new Color(.94f, .84f, .82f, 1));
             SetRect(warning.GetComponent<RectTransform>(), new Vector2(0, 12), new Vector2(540, 105));
-            Text(paid ? "오늘의 노동값 납부 완료\n안전하게 다음 날로 이동할 수 있습니다." : $"경고: 오늘의 노동값 {GameDayClock.DailyLaborPayment:N0} 미납\n지금 하루를 종료하면 처형 절차가 시작됩니다.", warning.transform, Vector2.zero, new Vector2(500, 76), 18, paid ? new Color(.05f, .28f, .12f, 1) : new Color(.52f, .05f, .03f, 1));
-            Button endDay = CreateWindowButton(paid ? "하루 종료" : "미납 상태로 종료", page, new Vector2(0, -105), new Vector2(210, 46));
+            string endWarning = paid
+                ? L("오늘의 노동값 납부 완료\n안전하게 다음 날로 이동할 수 있습니다.", "TODAY'S PAYMENT IS COMPLETE.\nYOU MAY SAFELY PROCEED TO THE NEXT DAY.")
+                : L($"경고: 오늘의 노동값 {GameDayClock.DailyLaborPayment:N0} 미납\n지금 하루를 종료하면 처형 절차가 시작됩니다.", $"WARNING: {GameDayClock.DailyLaborPayment:N0} LABOR REMAINS UNPAID.\nENDING THE DAY WILL BEGIN EXECUTION PROCEDURES.");
+            Text(endWarning, warning.transform, Vector2.zero, new Vector2(500, 76), 18, paid ? new Color(.05f, .28f, .12f, 1) : new Color(.52f, .05f, .03f, 1));
+            Button endDay = CreateWindowButton(paid ? L("하루 종료", "END DAY") : L("미납 상태로 종료", "END DAY UNPAID"), page, new Vector2(0, -105), new Vector2(210, 46));
             endDay.onClick.AddListener(EndDayFromComputer);
             return;
         }
@@ -769,15 +800,15 @@ public sealed class GameplayUiController : MonoBehaviour
         if (app == "업그레이드 상점")
         {
             Text("SYSTEM UPGRADES", page, new Vector2(0, 250), new Vector2(650, 36), 27, new Color(.12f, .22f, .4f, 1));
-            Text("영구 업그레이드 · 구매 즉시 적용", page, new Vector2(0, 219), new Vector2(650, 22), 15, new Color(.25f, .25f, .28f, 1));
-            CreateUpgradeRow("inventory", "인벤토리 확장", $"현재 {UpgradeService.InventoryCapacity}칸 · 최대 10칸", new Vector2(0, 178), page);
-            CreateUpgradeRow("chance", "흥정 기술", $"성공률 {UpgradeService.HaggleChance * 100f:0}% · 최대 80%", new Vector2(0, 120), page);
-            CreateUpgradeRow("margin", "협상 수익", $"성공 시 {UpgradeService.HaggleMinIncrease * 100f:0}~{UpgradeService.HaggleMaxIncrease * 100f:0}% 상승", new Vector2(0, 62), page);
-            CreateUpgradeRow("luck", "카드팩 행운", $"상위 카드 출현 보정 +{UpgradeService.PackLuckLevel * 8}%", new Vector2(0, 4), page);
-            CreateUpgradeRow("risk", "위험 보상", $"당첨 배율 x{UpgradeService.RiskPayoutMultiplier:0.0}", new Vector2(0, -54), page);
-            CreateUpgradeRow("discount", "도구 할인", $"락핀 가격 {UpgradeService.ToolDiscount * 100f:0}% 할인", new Vector2(0, -112), page);
-            CreateUpgradeRow("skill", "해제 숙련", $"스킬 체크 성공 구간 {UpgradeService.SkillZoneWidth * 100f:0}%", new Vector2(0, -170), page);
-            CreateUpgradeRow("experience", "학습 속도", $"경험치 획득 x{UpgradeService.ExperienceMultiplier:0.0}", new Vector2(0, -228), page);
+            Text(L("영구 업그레이드 · 구매 즉시 적용", "PERMANENT UPGRADES · APPLIED IMMEDIATELY"), page, new Vector2(0, 219), new Vector2(650, 22), 15, new Color(.25f, .25f, .28f, 1));
+            CreateUpgradeRow("inventory", L("인벤토리 확장", "INVENTORY EXPANSION"), L($"현재 {UpgradeService.InventoryCapacity}칸 · 최대 10칸", $"CURRENT {UpgradeService.InventoryCapacity} SLOTS · MAX 10"), new Vector2(0, 178), page);
+            CreateUpgradeRow("chance", L("흥정 기술", "NEGOTIATION SKILL"), L($"성공률 {UpgradeService.HaggleChance * 100f:0}% · 최대 80%", $"SUCCESS {UpgradeService.HaggleChance * 100f:0}% · MAX 80%"), new Vector2(0, 120), page);
+            CreateUpgradeRow("margin", L("협상 수익", "NEGOTIATION PROFIT"), L($"성공 시 {UpgradeService.HaggleMinIncrease * 100f:0}~{UpgradeService.HaggleMaxIncrease * 100f:0}% 상승", $"SUCCESS INCREASE {UpgradeService.HaggleMinIncrease * 100f:0}~{UpgradeService.HaggleMaxIncrease * 100f:0}%"), new Vector2(0, 62), page);
+            CreateUpgradeRow("luck", L("카드팩 행운", "CARD-PACK LUCK"), L($"상위 카드 출현 보정 +{UpgradeService.PackLuckLevel * 8}%", $"HIGH-TIER CARD CHANCE +{UpgradeService.PackLuckLevel * 8}%"), new Vector2(0, 4), page);
+            CreateUpgradeRow("risk", L("위험 보상", "RISK REWARD"), L($"당첨 배율 x{UpgradeService.RiskPayoutMultiplier:0.0}", $"WIN MULTIPLIER x{UpgradeService.RiskPayoutMultiplier:0.0}"), new Vector2(0, -54), page);
+            CreateUpgradeRow("discount", L("도구 할인", "TOOL DISCOUNT"), L($"락핀 가격 {UpgradeService.ToolDiscount * 100f:0}% 할인", $"LOCKPICK PRICE -{UpgradeService.ToolDiscount * 100f:0}%"), new Vector2(0, -112), page);
+            CreateUpgradeRow("skill", L("해제 숙련", "UNSEALING MASTERY"), L($"스킬 체크 성공 구간 {UpgradeService.SkillZoneWidth * 100f:0}%", $"SKILL-CHECK ZONE {UpgradeService.SkillZoneWidth * 100f:0}%"), new Vector2(0, -170), page);
+            CreateUpgradeRow("experience", L("학습 속도", "LEARNING SPEED"), L($"경험치 획득 x{UpgradeService.ExperienceMultiplier:0.0}", $"EXP GAIN x{UpgradeService.ExperienceMultiplier:0.0}"), new Vector2(0, -228), page);
             return;
         }
 
@@ -817,11 +848,12 @@ public sealed class GameplayUiController : MonoBehaviour
     {
         computerRadio ??= computer != null ? ComputerRadioPlayer.GetOrCreate(computer) : null;
         Text("FACILITY RADIO", page, new Vector2(0, 145), new Vector2(600, 38), 28, new Color(0f, .08f, .48f, 1));
-        Text("컴퓨터에서 재생되는 시설 라디오입니다. 멀어질수록 소리가 작아집니다.", page,
+        Text(L("컴퓨터에서 재생되는 시설 라디오입니다. 멀어질수록 소리가 작아집니다.", "SPATIAL FACILITY RADIO PLAYED FROM THIS COMPUTER. VOLUME FADES WITH DISTANCE."), page,
             new Vector2(0, 108), new Vector2(620, 26), 16, Color.black);
 
-        TMP_InputField urlInput = CreateTextInput("MP3 / OGG / WAV 주소 또는 file:/// 로컬 경로", page, new Vector2(0, 55), new Vector2(570, 42));
-        TextMeshProUGUI status = Text(computerRadio != null ? computerRadio.Status : "컴퓨터 오디오 장치를 찾지 못했습니다.",
+        TMP_InputField urlInput = CreateTextInput(L("MP3 / OGG / WAV 주소 또는 file:/// 로컬 경로", "MP3 / OGG / WAV URL OR file:/// LOCAL PATH"), page, new Vector2(0, 55), new Vector2(570, 42));
+        if (computerRadio != null) urlInput.text = computerRadio.SavedUrl;
+        TextMeshProUGUI status = Text(computerRadio != null ? GameLanguage.Runtime(computerRadio.Status) : L("컴퓨터 오디오 장치를 찾지 못했습니다.", "COMPUTER AUDIO DEVICE NOT FOUND."),
             page, new Vector2(0, 14), new Vector2(590, 24), 15,
             computerRadio != null && computerRadio.HasError ? new Color(.65f, .04f, .04f, 1) : new Color(.05f, .35f, .18f, 1));
         status.textWrappingMode = TextWrappingModes.NoWrap;
@@ -829,10 +861,10 @@ public sealed class GameplayUiController : MonoBehaviour
             page, new Vector2(0, -12), new Vector2(240, 24), 16, Color.black);
         StartCoroutine(UpdateRadioStatus(status, positionLabel));
 
-        Button play = CreateWindowButton("재생", page, new Vector2(-185, -45), new Vector2(110, 36));
-        Button stop = CreateWindowButton("정지", page, new Vector2(-65, -45), new Vector2(110, 36));
-        CreateWindowButton("-10초", page, new Vector2(65, -45), new Vector2(110, 36)).onClick.AddListener(() => computerRadio?.Seek(-10f));
-        CreateWindowButton("+10초", page, new Vector2(185, -45), new Vector2(110, 36)).onClick.AddListener(() => computerRadio?.Seek(10f));
+        Button play = CreateWindowButton(L("재생", "PLAY"), page, new Vector2(-185, -45), new Vector2(110, 36));
+        Button stop = CreateWindowButton(L("정지", "STOP"), page, new Vector2(-65, -45), new Vector2(110, 36));
+        CreateWindowButton(L("-10초", "-10 SEC"), page, new Vector2(65, -45), new Vector2(110, 36)).onClick.AddListener(() => computerRadio?.Seek(-10f));
+        CreateWindowButton(L("+10초", "+10 SEC"), page, new Vector2(185, -45), new Vector2(110, 36)).onClick.AddListener(() => computerRadio?.Seek(10f));
         play.onClick.AddListener(() =>
         {
             if (computerRadio == null) return;
@@ -844,13 +876,13 @@ public sealed class GameplayUiController : MonoBehaviour
         });
 
         float volume = computerRadio != null ? computerRadio.VolumePercent : 100f;
-        Text($"라디오 볼륨  {volume:0}%", page, new Vector2(0, -88), new Vector2(240, 28), 18, Color.black);
-        CreateWindowButton("-100", page, new Vector2(-250, -88), new Vector2(68, 32)).onClick.AddListener(() => AdjustRadioVolume(-100, page.parent.gameObject));
+        Text(L($"라디오 볼륨  {volume:0}%", $"RADIO VOLUME  {volume:0}%"), page, new Vector2(0, -88), new Vector2(240, 28), 18, Color.black);
+        CreateWindowButton("-500", page, new Vector2(-250, -88), new Vector2(68, 32)).onClick.AddListener(() => AdjustRadioVolume(-500, page.parent.gameObject));
         CreateWindowButton("-10", page, new Vector2(-175, -88), new Vector2(62, 32)).onClick.AddListener(() => AdjustRadioVolume(-10, page.parent.gameObject));
         CreateWindowButton("+10", page, new Vector2(175, -88), new Vector2(62, 32)).onClick.AddListener(() => AdjustRadioVolume(10, page.parent.gameObject));
-        CreateWindowButton("+100", page, new Vector2(250, -88), new Vector2(68, 32)).onClick.AddListener(() => AdjustRadioVolume(100, page.parent.gameObject));
+        CreateWindowButton("+500", page, new Vector2(250, -88), new Vector2(68, 32)).onClick.AddListener(() => AdjustRadioVolume(500, page.parent.gameObject));
 
-        Button loop = CreateWindowButton(computerRadio != null && computerRadio.LoopEnabled ? "[X] 반복 재생" : "[ ] 반복 재생",
+        Button loop = CreateWindowButton(computerRadio != null && computerRadio.LoopEnabled ? L("[X] 반복 재생", "[X] LOOP") : L("[ ] 반복 재생", "[ ] LOOP"),
             page, new Vector2(0, -123), new Vector2(180, 30));
         loop.onClick.AddListener(() =>
         {
@@ -858,7 +890,7 @@ public sealed class GameplayUiController : MonoBehaviour
             RefreshRadioWindow(page.parent.gameObject);
         });
 
-        Text("YouTube 주소는 공식 임베디드 플레이어가 필요합니다.\n직접 MP3/OGG/WAV 주소와 file:/// 로컬 파일을 재생할 수 있습니다.",
+        Text(L("YouTube 주소는 공식 임베디드 플레이어가 필요합니다.\n직접 MP3/OGG/WAV 주소와 file:/// 로컬 파일을 재생할 수 있습니다.", "YOUTUBE URLS REQUIRE THE OFFICIAL EMBEDDED PLAYER.\nDIRECT MP3/OGG/WAV URLS AND file:/// LOCAL FILES ARE SUPPORTED."),
             page, new Vector2(0, -158), new Vector2(610, 34), 12, new Color(.32f, .32f, .32f, 1));
     }
 
@@ -873,7 +905,7 @@ public sealed class GameplayUiController : MonoBehaviour
     {
         while (label != null && computerRadio != null)
         {
-            label.text = computerRadio.Status;
+            label.text = GameLanguage.Runtime(computerRadio.Status);
             label.color = computerRadio.HasError
                 ? new Color(.65f, .04f, .04f, 1)
                 : new Color(.05f, .35f, .18f, 1);
@@ -949,13 +981,31 @@ public sealed class GameplayUiController : MonoBehaviour
             copy = $"수용자 계정: 익명\nDAY {GameSaveService.Day:00}  |  자정까지 {FormatTime(GameDayClock.SecondsUntilMidnight)}\n\n오늘의 청구액을 확인하고, 필요한 업무를 선택하십시오.";
         }
 
+        if (GameLanguage.IsEnglish)
+        {
+            copy = page switch
+            {
+                "일일 납부" => GameSaveService.DailyPaymentPaid
+                    ? $"TODAY'S SURVIVAL CHARGE: PAID\nLABOR BALANCE: {GameSaveService.Labor:N0}\n\nTHE NEXT CHARGE IS ISSUED AFTER MIDNIGHT."
+                    : $"TODAY'S SURVIVAL CHARGE: {GameDayClock.DailyLaborPayment:N0} LABOR\nLABOR BALANCE: {GameSaveService.Labor:N0}\n\nFAILURE TO PAY BEFORE MIDNIGHT BEGINS DISPOSAL PROCEDURES.",
+                "자유 기금" => $"CURRENT FREEDOM FUND: {GameSaveService.FreedomFund:N0} / {GameEconomy.FreedomGoal:N0}\nLABOR BALANCE: {GameSaveService.Labor:N0}\n\nDEPOSITS ARE NON-REFUNDABLE. THE EXIT OPENS ONLY AFTER THE GOAL IS MET.",
+                "데일리 상품" => "TODAY'S SUPPLIES ARE SENT TO THE DELIVERY CHUTE.\nSTOCK REFRESHES AT MIDNIGHT.\n\n[ STANDBY ] LOADING ITEM LIST.",
+                "위험 게임" => "WIN ODDS ARE NOT DISCLOSED.\nTHE FACILITY DOES NOT GUARANTEE FAIR RESULTS.\n\n[ STANDBY ] RISK SERVER UNAVAILABLE.",
+                "내 컴퓨터" => "MY COMPUTER\n\nA PERSONAL TERMINAL CONNECTED TO THE FACILITY NETWORK.\nACCESS ACCOUNTS, PAYMENTS, SUPPLIES, AND RECORDS HERE.",
+                "채무 계정" => $"DEBT ACCOUNT\n\nLABOR BALANCE: {GameSaveService.Labor:N0}\nTODAY'S SURVIVAL CHARGE: {GameDayClock.DailyLaborPayment:N0}\nFREEDOM FUND: {GameSaveService.FreedomFund:N0} / {GameEconomy.FreedomGoal:N0}",
+                "물건 투입구" => $"DELIVERY CHUTE\n\nPURCHASES AND DAILY SUPPLIES ARE DELIVERED TO THE CHUTE.\nPENDING ITEMS: {ItemInventoryService.DeliveryCount}",
+                "도움말" => "HELP\n\n1. COMPLETE THE DAILY PAYMENT BEFORE MIDNIGHT.\n2. DEPOSIT SURPLUS LABOR INTO THE FREEDOM FUND.\n3. COLLECT DELIVERED ITEMS FROM THE CHUTE.",
+                _ => $"PRISONER ACCOUNT: ANONYMOUS\nDAY {GameSaveService.Day:00}  |  UNTIL MIDNIGHT {FormatTime(GameDayClock.SecondsUntilMidnight)}\n\nREVIEW TODAY'S CHARGE AND SELECT A REQUIRED TASK."
+            };
+        }
+
         Text(copy, terminalContent, new Vector2(-130, 48), new Vector2(650, 185), 21, Color.black).alignment = TextAlignmentOptions.TopLeft;
         Text("SYSTEM READY", terminalContent, new Vector2(-130, -175), new Vector2(650, 24), 15, new Color(0f, .36f, .2f, 1)).alignment = TextAlignmentOptions.Left;
     }
 
     private void RenderComputerHome()
     {
-        Text("수용자 단말기", terminalContent, new Vector2(-350, 168), new Vector2(220, 34), 27, new Color(0f, .08f, .36f, 1)).alignment = TextAlignmentOptions.Left;
+        Text(L("수용자 단말기", "PRISONER TERMINAL"), terminalContent, new Vector2(-330, 168), new Vector2(260, 34), 27, new Color(0f, .08f, .36f, 1)).alignment = TextAlignmentOptions.Left;
         Text("SYSTEM OVERVIEW", terminalContent, new Vector2(250, 168), new Vector2(210, 24), 14, new Color(.35f, .35f, .35f, 1)).alignment = TextAlignmentOptions.Right;
 
         CreateComputerStatCard("DAY", GameSaveService.Day.ToString("00"), new Vector2(-315, 70), new Color(0f, .08f, .48f, 1));
@@ -971,7 +1021,7 @@ public sealed class GameplayUiController : MonoBehaviour
         string paymentState = GameSaveService.DailyPaymentPaid ? "오늘 납부 완료" : $"오늘 미납 · {GameDayClock.DailyLaborPayment:N0} 노동값 필요";
         Text(paymentState, notice.transform, new Vector2(-245, 15), new Vector2(340, 26), 19, GameSaveService.DailyPaymentPaid ? new Color(.05f, .35f, .15f, 1) : new Color(.5f, .06f, .03f, 1)).alignment = TextAlignmentOptions.Left;
         Text($"자유 기금  {GameSaveService.FreedomFund:N0} / {GameEconomy.FreedomGoal:N0}", notice.transform, new Vector2(180, -17), new Vector2(430, 24), 16, Color.black).alignment = TextAlignmentOptions.Right;
-        Text("아래 업무 버튼 또는 데스크톱 아이콘을 선택하십시오.", terminalContent, new Vector2(0, -145), new Vector2(760, 26), 16, new Color(.25f, .25f, .25f, 1));
+        Text(L("아래 업무 버튼 또는 데스크톱 아이콘을 선택하십시오.", "SELECT A TASK BUTTON BELOW OR AN APPLICATION ON THE DESKTOP."), terminalContent, new Vector2(0, -145), new Vector2(760, 26), 16, new Color(.25f, .25f, .25f, 1));
     }
 
     private TextMeshProUGUI CreateComputerStatCard(string label, string value, Vector2 position, Color accent)
@@ -1034,13 +1084,20 @@ public sealed class GameplayUiController : MonoBehaviour
 
     private void PayFreedomFund()
     {
-        int payment = GameEconomy.Scale(10);
+        int remaining = Mathf.Max(0, GameEconomy.FreedomGoal - GameSaveService.FreedomFund);
+        if (remaining == 0)
+        {
+            TryBeginFreedomEnding();
+            return;
+        }
+        int payment = Mathf.Min(GameEconomy.Scale(10), remaining);
         if (GameSaveService.Labor < payment) GameNotificationCenter.Error($"노동값이 {payment - GameSaveService.Labor:N0} 부족합니다.");
         else
         {
             GameSaveService.SaveProgress(GameSaveService.Day, GameSaveService.Labor - payment, GameSaveService.Debt);
-            GameSaveService.SetFreedomFund(GameSaveService.FreedomFund + payment);
+            GameSaveService.SetFreedomFund(Mathf.Min(GameEconomy.FreedomGoal, GameSaveService.FreedomFund + payment));
             GameNotificationCenter.Success($"자유 기금에 {payment:N0}을 납부했습니다.");
+            if (TryBeginFreedomEnding()) return;
         }
         ShowComputerPage("자유 기금");
         RefreshStatusHud();
@@ -1054,9 +1111,10 @@ public sealed class GameplayUiController : MonoBehaviour
             return;
         }
         GameSaveService.SaveProgress(GameSaveService.Day, GameSaveService.Labor - amount, GameSaveService.Debt);
-        GameSaveService.SetFreedomFund(GameSaveService.FreedomFund + amount);
+        GameSaveService.SetFreedomFund(Mathf.Min(GameEconomy.FreedomGoal, GameSaveService.FreedomFund + amount));
         GameNotificationCenter.Success($"자유 기금에 {amount:N0}을 납부했습니다.");
         RefreshStatusHud();
+        if (TryBeginFreedomEnding(window)) return;
         Destroy(window);
         OpenAppWindow("자유 기금");
     }
@@ -1065,6 +1123,15 @@ public sealed class GameplayUiController : MonoBehaviour
     {
         if (input == null) return;
         input.text = maximum <= 0 ? "0" : Mathf.Max(1, Mathf.FloorToInt(maximum * fraction)).ToString();
+    }
+
+    private bool TryBeginFreedomEnding(GameObject window = null)
+    {
+        if (GameSaveService.FreedomFund < GameEconomy.FreedomGoal) return false;
+        if (window != null) Destroy(window);
+        GameNotificationCenter.Success("자유 기금 완납 · 석방 절차를 시작합니다.");
+        DailyStoryController.BeginFreedomEnding();
+        return true;
     }
 
     private void PayFreedomFundFromInput(string rawAmount, GameObject window)
@@ -1132,7 +1199,9 @@ public sealed class GameplayUiController : MonoBehaviour
         int reward = Random.value < .42f
             ? (int)System.Math.Min(1_500_000_000L, System.Math.Round((double)bet * UpgradeService.RiskPayoutMultiplier))
             : 0;
-        riskMessage = reward > 0 ? $"당첨. {reward:N0} 노동값이 지급되었습니다." : "실패. 베팅 노동값을 잃었습니다.";
+        riskMessage = reward > 0
+            ? L($"당첨. {reward:N0} 노동값이 지급되었습니다.", $"WIN. {reward:N0} LABOR AWARDED.")
+            : L("실패. 베팅 노동값을 잃었습니다.", "FAILED. THE WAGERED LABOR WAS LOST.");
         if (reward > 0) GameNotificationCenter.Success($"당첨! +{reward:N0} 노동값");
         else GameNotificationCenter.Error($"실패 · {bet:N0} 노동값을 잃었습니다.");
         int resultingLabor = (int)System.Math.Clamp((long)GameSaveService.Labor - bet + reward, 0L, 1_500_000_000L);
@@ -1167,8 +1236,8 @@ public sealed class GameplayUiController : MonoBehaviour
         outline.effectDistance = new Vector2(1, -1);
         Text(item, card.transform, new Vector2(0, 60), new Vector2(180, 28), 19, new Color(.08f, .22f, .12f, 1));
         Text(description, card.transform, new Vector2(0, 15), new Vector2(175, 48), 14, new Color(.24f, .28f, .25f, 1));
-        Text($"{price:N0} 노동값", card.transform, new Vector2(0, -30), new Vector2(180, 22), 15, Color.black);
-        CreateWindowButton("구매", card.transform, new Vector2(0, -68), new Vector2(126, 34)).onClick.AddListener(() => BuyToolItem(item, price, window));
+        Text(L($"{price:N0} 노동값", $"{price:N0} LABOR"), card.transform, new Vector2(0, -30), new Vector2(180, 22), 15, Color.black);
+        CreateWindowButton(L("구매", "BUY"), card.transform, new Vector2(0, -68), new Vector2(126, 34)).onClick.AddListener(() => BuyToolItem(item, price, window));
     }
 
     private void ClaimDailyReward(GameObject window)
@@ -1188,8 +1257,8 @@ public sealed class GameplayUiController : MonoBehaviour
     private void BuildCardPackShop(Transform page, GameObject window)
     {
         Text("CARD SUPPLY SHOP", page, new Vector2(-205, 260), new Vector2(430, 36), 27, new Color(.3f, .06f, .36f, 1)).alignment = TextAlignmentOptions.Left;
-        Text($"수용자 LV {CardProgressionService.Level:00}  ·  해금 팩 {CardProgressionService.Level}/{CardProgressionService.PackCount}", page, new Vector2(255, 260), new Vector2(390, 28), 16, Color.black).alignment = TextAlignmentOptions.Right;
-        Text("각 카드팩은 요구 레벨, 희귀도 보정과 판매가 배율이 다릅니다.", page, new Vector2(-135, 225), new Vector2(570, 24), 15, new Color(.28f, .28f, .32f, 1)).alignment = TextAlignmentOptions.Left;
+        Text(L($"수용자 LV {CardProgressionService.Level:00}  ·  해금 팩 {CardProgressionService.Level}/{CardProgressionService.PackCount}", $"PRISONER LV {CardProgressionService.Level:00}  ·  UNLOCKED {CardProgressionService.Level}/{CardProgressionService.PackCount}"), page, new Vector2(255, 260), new Vector2(390, 28), 16, Color.black).alignment = TextAlignmentOptions.Right;
+        Text(L("각 카드팩은 요구 레벨, 희귀도 보정과 판매가 배율이 다릅니다.", "EACH PACK HAS A UNIQUE LEVEL, LUCK BONUS, AND VALUE MULTIPLIER."), page, new Vector2(-105, 225), new Vector2(630, 24), 15, new Color(.28f, .28f, .32f, 1)).alignment = TextAlignmentOptions.Left;
 
         GameObject viewportObject = ImageObject("Card Pack Viewport", page, new Color(.94f, .94f, .95f, 1));
         SetRect(viewportObject.GetComponent<RectTransform>(), new Vector2(-8, -25), new Vector2(820, 465));
@@ -1257,10 +1326,10 @@ public sealed class GameplayUiController : MonoBehaviour
         SetRect(tierStripe.GetComponent<RectTransform>(), new Vector2(-179, 0), new Vector2(7, 106));
         Text(pack.Name, card.transform, new Vector2(-62, 30), new Vector2(225, 26), 18, unlocked ? new Color(.14f, .04f, .2f, 1) : new Color(.3f, .3f, .32f, 1)).alignment = TextAlignmentOptions.Left;
         Text($"LV {pack.RequiredLevel:00}", card.transform, new Vector2(130, 31), new Vector2(72, 23), 14, unlocked ? new Color(.3f, .06f, .36f, 1) : new Color(.42f, .12f, .12f, 1));
-        Text($"행운 {pack.LuckBonus * 100f:0}%   ·   카드 가치 x{pack.ValueMultiplier:N0}   ·   EXP +{pack.Experience}", card.transform, new Vector2(-35, 3), new Vector2(280, 22), 13, new Color(.25f, .25f, .28f, 1)).alignment = TextAlignmentOptions.Left;
+        Text(L($"행운 {pack.LuckBonus * 100f:0}%   ·   카드 가치 x{pack.ValueMultiplier:N0}   ·   EXP +{pack.Experience}", $"LUCK {pack.LuckBonus * 100f:0}%   ·   VALUE x{pack.ValueMultiplier:N0}   ·   EXP +{pack.Experience}"), card.transform, new Vector2(-35, 3), new Vector2(280, 22), 13, new Color(.25f, .25f, .28f, 1)).alignment = TextAlignmentOptions.Left;
         int price = CardProgressionService.GetPackPrice(pack.Name);
-        Text($"{price:N0} 노동값", card.transform, new Vector2(-63, -28), new Vector2(220, 22), 14, Color.black).alignment = TextAlignmentOptions.Left;
-        Button buy = CreateWindowButton(unlocked ? "구매" : $"LV {pack.RequiredLevel} 필요", card.transform, new Vector2(122, -27), new Vector2(118, 34));
+        Text(L($"{price:N0} 노동값", $"{price:N0} LABOR"), card.transform, new Vector2(-63, -28), new Vector2(220, 22), 14, Color.black).alignment = TextAlignmentOptions.Left;
+        Button buy = CreateWindowButton(unlocked ? L("구매", "BUY") : L($"LV {pack.RequiredLevel} 필요", $"REQUIRES LV {pack.RequiredLevel}"), card.transform, new Vector2(122, -27), new Vector2(118, 34));
         buy.interactable = unlocked;
         buy.onClick.AddListener(() => BuyCardPack(pack.Name, price, window));
     }
@@ -1326,7 +1395,7 @@ public sealed class GameplayUiController : MonoBehaviour
         CreateHeader(terminalPanel.transform, "물건 투입구", "DELIVERY CHUTE  //  RECEIVING", new Color(.08f, .32f, .36f, 1), new Vector2(860, 76), 242);
 
         Text("시설 배송망", terminalPanel.transform, new Vector2(-340, 178), new Vector2(180, 26), 17, new Color(.35f, .8f, .78f, 1)).alignment = TextAlignmentOptions.Left;
-        Text($"대기 {ItemInventoryService.DeliveryCount}개", terminalPanel.transform, new Vector2(330, 178), new Vector2(170, 26), 17, new Color(.72f, .78f, .77f, 1)).alignment = TextAlignmentOptions.Right;
+        Text(GameLanguage.IsEnglish ? $"PENDING  {ItemInventoryService.DeliveryCount}" : $"대기 {ItemInventoryService.DeliveryCount}개", terminalPanel.transform, new Vector2(330, 178), new Vector2(170, 26), 17, new Color(.72f, .78f, .77f, 1)).alignment = TextAlignmentOptions.Right;
 
         GameObject listPanel = CreateRoundedPanel("Delivery Queue", terminalPanel.transform, new Vector2(-155, -5), new Vector2(510, 330), new Color(.09f, .105f, .11f, 1), 12);
         Text("수령 대기 목록", listPanel.transform, new Vector2(0, 130), new Vector2(410, 28), 22, Color.white).alignment = TextAlignmentOptions.Left;
@@ -1469,7 +1538,10 @@ public sealed class GameplayUiController : MonoBehaviour
             int capturedSlot = slot;
             GameObject boxRow = CreateRoundedPanel("Sealed Box", packList.transform, new Vector2(0, 95 - row * 64), new Vector2(720, 54), new Color(.17f, .105f, .055f, 1), 8);
             Text(boxItem, boxRow.transform, new Vector2(-220, 8), new Vector2(230, 26), 19, Color.white).alignment = TextAlignmentOptions.Left;
-            Text($"슬롯 {slot + 1} · 희귀도 {ItemInventoryService.GetLootBoxRarity(boxItem)} · 락핀 필요", boxRow.transform, new Vector2(-190, -16), new Vector2(290, 18), 13, new Color(.72f, .48f, .3f, 1)).alignment = TextAlignmentOptions.Left;
+            Text(GameLanguage.IsEnglish
+                    ? $"SLOT {slot + 1} · RARITY {ItemInventoryService.GetLootBoxRarity(boxItem)} · LOCKPICK REQUIRED"
+                    : $"슬롯 {slot + 1} · 희귀도 {ItemInventoryService.GetLootBoxRarity(boxItem)} · 락핀 필요",
+                boxRow.transform, new Vector2(-190, -16), new Vector2(290, 18), 13, new Color(.72f, .48f, .3f, 1)).alignment = TextAlignmentOptions.Left;
             CreateActionButton("락픽", boxRow.transform, new Vector2(190, 0), new Vector2(82, 38), new Color(.52f, .16f, .045f, 1)).onClick.AddListener(() => StartLockpickSkillCheck(capturedSlot));
             CreateActionButton("드릴", boxRow.transform, new Vector2(278, 0), new Vector2(78, 38), new Color(.34f, .2f, .08f, 1)).onClick.AddListener(() => StartDrillCheck(capturedSlot));
             CreateActionButton("절단", boxRow.transform, new Vector2(348, 0), new Vector2(60, 38), new Color(.24f, .26f, .22f, 1)).onClick.AddListener(() => UseHydraulicCutter(capturedSlot));
@@ -1508,9 +1580,17 @@ public sealed class GameplayUiController : MonoBehaviour
         packHackCode = packOpeningProtocol == 4 ? GenerateHackCode(Mathf.Clamp(3 + packLevel / 5, 3, 9)) : string.Empty;
         packOpeningOverlay = CreateRoundedPanel("Card Pack Opening", terminalPanel.transform, Vector2.zero, new Vector2(820, 470), new Color(.035f, .026f, .02f, .995f), 16);
         packOpeningOverlay.transform.SetAsLastSibling();
-        Text(PackProtocolNames[Mathf.Clamp(packLevel - 1, 0, PackProtocolNames.Length - 1)], packOpeningOverlay.transform, new Vector2(0, 185), new Vector2(700, 38), 26, new Color(.94f, .72f, .38f, 1));
+        int protocolNameIndex = Mathf.Clamp(packLevel - 1, 0, PackProtocolNames.Length - 1);
+        Text(GameLanguage.IsEnglish ? PackProtocolNamesEnglish[protocolNameIndex] : PackProtocolNames[protocolNameIndex], packOpeningOverlay.transform, new Vector2(0, 185), new Vector2(700, 38), 26, new Color(.94f, .72f, .38f, 1));
         Text(pack, packOpeningOverlay.transform, new Vector2(0, 140), new Vector2(680, 30), 21, Color.white);
-        string instruction = packOpeningProtocol switch
+        string instruction = GameLanguage.IsEnglish ? packOpeningProtocol switch
+        {
+            0 => "PRESS SPACE WHEN THE HORIZONTAL SCANNER ENTERS THE GOLD ZONE.",
+            1 => "PRESS SPACE WHEN THE VERTICAL MARKER ENTERS THE AUTHORIZATION ZONE.",
+            2 => "PRESS SPACE AS THE ROTARY DIAL PASSES THROUGH THE GOLD ZONE.",
+            3 => "HOLD SPACE TO CHARGE, THEN RELEASE IT INSIDE THE TARGET ZONE.",
+            _ => "ENTER THE W/A/S/D ACCESS CODE SHOWN ON THE MINI NOTEBOOK."
+        } : packOpeningProtocol switch
         {
             0 => "가로 스캐너를 황금 구간에 맞춰 SPACE를 누르십시오.",
             1 => "세로 광학 표식을 인증 구간에 맞춰 SPACE를 누르십시오.",
@@ -1518,7 +1598,7 @@ public sealed class GameplayUiController : MonoBehaviour
             3 => "SPACE를 누르고 충전한 뒤 목표 구간에서 손을 떼십시오.",
             _ => "미니 노트북에 표시된 W/A/S/D 접속 코드를 순서대로 입력하십시오."
         };
-        Text(instruction + "\n팩 레벨이 높을수록 속도가 빨라지고 판정 범위가 좁아집니다.", packOpeningOverlay.transform, new Vector2(0, 92), new Vector2(700, 52), 15, new Color(.7f, .65f, .58f, 1));
+        Text(instruction + (GameLanguage.IsEnglish ? "\nHIGHER-LEVEL PACKS MOVE FASTER AND HAVE NARROWER SUCCESS ZONES." : "\n팩 레벨이 높을수록 속도가 빨라지고 판정 범위가 좁아집니다."), packOpeningOverlay.transform, new Vector2(0, 92), new Vector2(700, 52), 15, new Color(.7f, .65f, .58f, 1));
 
         if (packOpeningProtocol == 0 || packOpeningProtocol == 3)
         {
@@ -1546,11 +1626,11 @@ public sealed class GameplayUiController : MonoBehaviour
             GameObject laptop = CreateRoundedPanel("Mini Notebook", packOpeningOverlay.transform, new Vector2(0, -15), new Vector2(570, 190), new Color(.035f, .09f, .075f, 1), 10);
             Text("MINI NOTEBOOK // ACCESS SEQUENCE", laptop.transform, new Vector2(0, 62), new Vector2(520, 26), 16, new Color(.35f, .95f, .62f, 1));
             Text(string.Join("  ", packHackCode.ToCharArray()), laptop.transform, new Vector2(0, 12), new Vector2(520, 45), 29, Color.white);
-            packOpeningStatus = Text("입력 대기...", laptop.transform, new Vector2(0, -52), new Vector2(520, 28), 16, new Color(.35f, .95f, .62f, 1));
+            packOpeningStatus = Text(L("입력 대기...", "AWAITING INPUT..."), laptop.transform, new Vector2(0, -52), new Vector2(520, 28), 16, new Color(.35f, .95f, .62f, 1));
         }
         if (packOpeningProtocol != 4)
-            packOpeningStatus = Text($"PROTOCOL {packLevel:00}  ·  속도 x{packOpeningSpeed:0.00}", packOpeningOverlay.transform, new Vector2(0, -145), new Vector2(600, 24), 14, new Color(.64f, .5f, .34f, 1));
-        Text("ESC  취소", packOpeningOverlay.transform, new Vector2(310, -205), new Vector2(140, 22), 13, new Color(.48f, .45f, .42f, 1));
+            packOpeningStatus = Text(L($"PROTOCOL {packLevel:00}  ·  속도 x{packOpeningSpeed:0.00}", $"PROTOCOL {packLevel:00}  ·  SPEED x{packOpeningSpeed:0.00}"), packOpeningOverlay.transform, new Vector2(0, -145), new Vector2(600, 24), 14, new Color(.64f, .5f, .34f, 1));
+        Text(L("ESC  취소", "ESC  CANCEL"), packOpeningOverlay.transform, new Vector2(310, -205), new Vector2(140, 22), 13, new Color(.48f, .45f, .42f, 1));
         StartCoroutine(UiOpenAnimator.Play(packOpeningOverlay));
         GameplayTutorialController.ShowContext("card_pack");
     }
@@ -1574,7 +1654,9 @@ public sealed class GameplayUiController : MonoBehaviour
             if (input == '\0') return;
             if (packHackCode[packHackIndex] != input)
             {
-                if (packOpeningStatus != null) packOpeningStatus.text = $"ACCESS DENIED · 예상 {packHackCode[packHackIndex]} / 입력 {input}";
+                if (packOpeningStatus != null) packOpeningStatus.text = GameLanguage.IsEnglish
+                    ? $"ACCESS DENIED · EXPECTED {packHackCode[packHackIndex]} / INPUT {input}"
+                    : $"ACCESS DENIED · 예상 {packHackCode[packHackIndex]} / 입력 {input}";
                 ResolveCardPackOpening(.12f);
                 return;
             }
@@ -1652,8 +1734,8 @@ public sealed class GameplayUiController : MonoBehaviour
         Text(accuracy >= .85f ? "PERFECT OPEN" : accuracy >= .5f ? "CLEAN OPEN" : "ROUGH OPEN", reveal.transform, new Vector2(0, 135), new Vector2(560, 34), 22, new Color(.94f, .66f, .25f, 1));
         GameObject cardPanel = CreateRoundedPanel("Revealed Card", reveal.transform, new Vector2(0, 25), new Vector2(430, 150), new Color(.17f, .12f, .075f, 1), 12);
         Text(card, cardPanel.transform, new Vector2(0, 18), new Vector2(390, 44), 24, Color.white);
-        Text($"판매 가치  {ItemInventoryService.GetValue(card):N0} 노동값\n개봉 정확도  {accuracy * 100f:0}%", cardPanel.transform, new Vector2(0, -35), new Vector2(390, 52), 16, new Color(.78f, .67f, .52f, 1));
-        Button confirm = CreateActionButton("확인", reveal.transform, new Vector2(0, -135), new Vector2(160, 44), new Color(.48f, .18f, .07f, 1));
+        Text(L($"판매 가치  {ItemInventoryService.GetValue(card):N0} 노동값\n개봉 정확도  {accuracy * 100f:0}%", $"SALE VALUE  {ItemInventoryService.GetValue(card):N0} LABOR\nOPENING ACCURACY  {accuracy * 100f:0}%"), cardPanel.transform, new Vector2(0, -35), new Vector2(390, 52), 16, new Color(.78f, .67f, .52f, 1));
+        Button confirm = CreateActionButton(L("확인", "CONFIRM"), reveal.transform, new Vector2(0, -135), new Vector2(160, 44), new Color(.48f, .18f, .07f, 1));
         confirm.onClick.AddListener(() =>
         {
             Destroy(terminalPanel);
@@ -1684,8 +1766,8 @@ public sealed class GameplayUiController : MonoBehaviour
 
         skillCheckOverlay = CreateRoundedPanel("Lockpin Skill Check", terminalPanel.transform, Vector2.zero, new Vector2(820, 470), new Color(.035f, .038f, .04f, .995f), 16);
         skillCheckOverlay.transform.SetAsLastSibling();
-        Text("봉인 해제", skillCheckOverlay.transform, new Vector2(0, 190), new Vector2(700, 38), 28, Color.white);
-        Text("SPACE를 누른 순간 표식이 초록 구간 안에 있으면 성공합니다.", skillCheckOverlay.transform, new Vector2(0, 153), new Vector2(700, 25), 16, new Color(.68f, .7f, .7f, 1));
+        Text(L("봉인 해제", "CONTAINER UNSEALING"), skillCheckOverlay.transform, new Vector2(0, 190), new Vector2(700, 38), 28, Color.white);
+        Text(L("SPACE를 누른 순간 표식이 초록 구간 안에 있으면 성공합니다.", "PRESS SPACE WHILE THE MARKER IS INSIDE THE GREEN ZONE."), skillCheckOverlay.transform, new Vector2(0, 153), new Vector2(700, 25), 16, new Color(.68f, .7f, .7f, 1));
 
         GameObject ring = ImageObject("Elliptic Timing Track", skillCheckOverlay.transform, Color.white);
         SetRect(ring.GetComponent<RectTransform>(), new Vector2(0, 5), new Vector2(560, 250));
@@ -1696,8 +1778,8 @@ public sealed class GameplayUiController : MonoBehaviour
         GameObject marker = CreateRoundedPanel("Timing Marker", skillCheckOverlay.transform, Vector2.zero, new Vector2(24, 24), new Color(1f, .9f, .72f, 1), 10);
         marker.transform.SetAsLastSibling();
         skillMarker = marker.GetComponent<RectTransform>();
-        Text($"상자 희귀도 {rarity}   ·   성공 구간 {skillZoneWidth * 100f:0.0}%   ·   실패 시 락핀 소모", skillCheckOverlay.transform, new Vector2(0, -155), new Vector2(650, 25), 15, new Color(.72f, .5f, .38f, 1));
-        Text("ESC  취소", skillCheckOverlay.transform, new Vector2(310, -205), new Vector2(140, 22), 13, new Color(.48f, .5f, .5f, 1));
+        Text(L($"상자 희귀도 {rarity}   ·   성공 구간 {skillZoneWidth * 100f:0.0}%   ·   실패 시 락핀 소모", $"BOX RARITY {rarity}   ·   SUCCESS ZONE {skillZoneWidth * 100f:0.0}%   ·   FAILURE CONSUMES LOCKPICK"), skillCheckOverlay.transform, new Vector2(0, -155), new Vector2(650, 25), 15, new Color(.72f, .5f, .38f, 1));
+        Text(L("ESC  취소", "ESC  CANCEL"), skillCheckOverlay.transform, new Vector2(310, -205), new Vector2(140, 22), 13, new Color(.48f, .5f, .5f, 1));
         GameplayTutorialController.ShowContext("lockpick");
     }
 
@@ -1778,9 +1860,9 @@ public sealed class GameplayUiController : MonoBehaviour
         drillCheckOverlay = CreateRoundedPanel("Drill Skill Check", terminalPanel.transform, Vector2.zero, new Vector2(820, 470), new Color(.035f, .032f, .025f, .995f), 16);
         drillCheckOverlay.transform.SetAsLastSibling();
         Text("DRILL OVERRIDE", drillCheckOverlay.transform, new Vector2(0, 185), new Vector2(700, 38), 28, new Color(1f, .66f, .18f, 1));
-        Text("SPACE를 누르면 천공하고, 놓으면 식습니다.\n과열시키지 않고 진행도 100%를 채우십시오.", drillCheckOverlay.transform, new Vector2(0, 128), new Vector2(700, 52), 16, new Color(.72f, .68f, .58f, 1));
+        Text(L("SPACE를 누르면 천공하고, 놓으면 식습니다.\n과열시키지 않고 진행도 100%를 채우십시오.", "HOLD SPACE TO DRILL; RELEASE IT TO COOL DOWN.\nREACH 100% PROGRESS WITHOUT OVERHEATING."), drillCheckOverlay.transform, new Vector2(0, 128), new Vector2(700, 52), 16, new Color(.72f, .68f, .58f, 1));
 
-        Text("천공 진행", drillCheckOverlay.transform, new Vector2(-210, 58), new Vector2(180, 24), 16, Color.white).alignment = TextAlignmentOptions.Left;
+        Text(L("천공 진행", "DRILL PROGRESS"), drillCheckOverlay.transform, new Vector2(-210, 58), new Vector2(180, 24), 16, Color.white).alignment = TextAlignmentOptions.Left;
         GameObject progressTrack = CreateRoundedPanel("Drill Progress", drillCheckOverlay.transform, new Vector2(0, 22), new Vector2(500, 28), new Color(.12f, .12f, .11f, 1), 7);
         GameObject progressFill = CreateRoundedPanel("Fill", progressTrack.transform, new Vector2(-246, 0), new Vector2(0, 20), new Color(.24f, .72f, .38f, 1), 5);
         drillProgressFill = progressFill.GetComponent<RectTransform>();
@@ -1788,7 +1870,7 @@ public sealed class GameplayUiController : MonoBehaviour
         drillProgressFill.pivot = new Vector2(0, .5f);
         drillProgressFill.anchoredPosition = new Vector2(4, 0);
 
-        Text("모터 온도", drillCheckOverlay.transform, new Vector2(-210, -42), new Vector2(180, 24), 16, Color.white).alignment = TextAlignmentOptions.Left;
+        Text(L("모터 온도", "MOTOR TEMPERATURE"), drillCheckOverlay.transform, new Vector2(-210, -42), new Vector2(180, 24), 16, Color.white).alignment = TextAlignmentOptions.Left;
         GameObject heatTrack = CreateRoundedPanel("Drill Heat", drillCheckOverlay.transform, new Vector2(0, -78), new Vector2(500, 28), new Color(.12f, .12f, .11f, 1), 7);
         GameObject safeZone = CreateRoundedPanel("Safe Heat", heatTrack.transform, new Vector2(40, 0), new Vector2(150, 20), new Color(.14f, .34f, .18f, 1), 5);
         safeZone.GetComponent<Image>().raycastTarget = false;
@@ -1797,7 +1879,7 @@ public sealed class GameplayUiController : MonoBehaviour
         drillHeatFill.anchorMin = drillHeatFill.anchorMax = new Vector2(0, .5f);
         drillHeatFill.pivot = new Vector2(0, .5f);
         drillHeatFill.anchoredPosition = new Vector2(4, 0);
-        Text("ESC  취소 · 취소 시 드릴 보존", drillCheckOverlay.transform, new Vector2(260, -205), new Vector2(250, 22), 13, new Color(.5f, .48f, .43f, 1));
+        Text(L("ESC  취소 · 취소 시 드릴 보존", "ESC  CANCEL · DRILL IS PRESERVED"), drillCheckOverlay.transform, new Vector2(260, -205), new Vector2(250, 22), 13, new Color(.5f, .48f, .43f, 1));
         StartCoroutine(UiOpenAnimator.Play(drillCheckOverlay));
         GameplayTutorialController.ShowContext("drill");
     }
@@ -2057,12 +2139,22 @@ public sealed class GameplayUiController : MonoBehaviour
 
     private void EnsureNightMarketState()
     {
+        if (nightMarketDay == 0 && PlayerPrefs.GetInt(NightMarketDayKey, -1) == GameSaveService.Day)
+        {
+            nightMarketDay = GameSaveService.Day;
+            nightMarketSeed = PlayerPrefs.GetInt(NightMarketSeedKey, GameSaveService.Day * 97);
+            nightMarketRerolls = Mathf.Max(0, PlayerPrefs.GetInt(NightMarketRerollsKey, 0));
+            float remaining = Mathf.Clamp(PlayerPrefs.GetFloat(NightMarketRemainingKey, 60f), 0f, 60f);
+            nightMarketRefreshAt = Time.unscaledTime + remaining;
+        }
+
         if (nightMarketDay != GameSaveService.Day)
         {
             nightMarketDay = GameSaveService.Day;
             nightMarketRerolls = 0;
             nightMarketSeed = GameSaveService.Day * 97 + Random.Range(0, 10000);
             nightMarketRefreshAt = Time.unscaledTime + 60f;
+            SaveNightMarketState();
         }
         else if (nightMarketRefreshAt <= 0f || Time.unscaledTime >= nightMarketRefreshAt)
             AdvanceNightMarketStock();
@@ -2072,6 +2164,25 @@ public sealed class GameplayUiController : MonoBehaviour
     {
         nightMarketSeed = unchecked(nightMarketSeed * 31 + 7919);
         nightMarketRefreshAt = Time.unscaledTime + 60f;
+        SaveNightMarketState();
+    }
+
+    private void SaveNightMarketState()
+    {
+        if (!GameSaveService.HasSave || nightMarketDay <= 0) return;
+        PlayerPrefs.SetInt(NightMarketDayKey, nightMarketDay);
+        PlayerPrefs.SetInt(NightMarketSeedKey, nightMarketSeed);
+        PlayerPrefs.SetInt(NightMarketRerollsKey, nightMarketRerolls);
+        PlayerPrefs.SetFloat(NightMarketRemainingKey, Mathf.Clamp(nightMarketRefreshAt - Time.unscaledTime, 0f, 60f));
+        PlayerPrefs.Save();
+    }
+
+    public static void ResetSavedNightMarket()
+    {
+        PlayerPrefs.DeleteKey(NightMarketDayKey);
+        PlayerPrefs.DeleteKey(NightMarketSeedKey);
+        PlayerPrefs.DeleteKey(NightMarketRerollsKey);
+        PlayerPrefs.DeleteKey(NightMarketRemainingKey);
     }
 
     private int GetNightMarketRerollCost()
@@ -2101,7 +2212,7 @@ public sealed class GameplayUiController : MonoBehaviour
         haggleSlot = slot;
         haggleAttempts = 0;
         hagglePrice = ItemInventoryService.GetValue(ItemInventoryService.GetItem(slot));
-        haggleMessage = "상점이 첫 가격을 제시했습니다.";
+        haggleMessage = L("상점이 첫 가격을 제시했습니다.", "THE SHOP HAS MADE ITS OPENING OFFER.");
         RenderHaggle();
     }
 
@@ -2110,25 +2221,25 @@ public sealed class GameplayUiController : MonoBehaviour
         ClearTerminalContent();
         string item = ItemInventoryService.GetItem(haggleSlot);
         if (string.IsNullOrEmpty(item)) { ShowShopSell(); return; }
-        Text("가격 협상", terminalContent, new Vector2(0, 205), new Vector2(750, 38), 28, Color.white).alignment = TextAlignmentOptions.Left;
+        Text(L("가격 협상", "PRICE NEGOTIATION"), terminalContent, new Vector2(0, 205), new Vector2(750, 38), 28, Color.white).alignment = TextAlignmentOptions.Left;
         Text(item, terminalContent, new Vector2(-195, 155), new Vector2(360, 30), 21, new Color(.86f, .72f, .55f, 1)).alignment = TextAlignmentOptions.Left;
         GameObject offer = CreateRoundedPanel("Offer", terminalContent, new Vector2(-170, 30), new Vector2(390, 190), new Color(.15f, .125f, .1f, 1), 10);
-        Text("현재 제시가", offer.transform, new Vector2(0, 52), new Vector2(300, 24), 16, new Color(.62f, .56f, .49f, 1));
+        Text(L("현재 제시가", "CURRENT OFFER"), offer.transform, new Vector2(0, 52), new Vector2(300, 24), 16, new Color(.62f, .56f, .49f, 1));
         Text(hagglePrice.ToString("N0"), offer.transform, new Vector2(0, 5), new Vector2(300, 55), 38, Color.white);
-        Text("노동값", offer.transform, new Vector2(0, -48), new Vector2(300, 22), 15, new Color(.62f, .56f, .49f, 1));
+        Text(L("노동값", "LABOR"), offer.transform, new Vector2(0, -48), new Vector2(300, 22), 15, new Color(.62f, .56f, .49f, 1));
         Text(haggleMessage, terminalContent, new Vector2(210, 75), new Vector2(300, 55), 17, Color.white);
-        Text($"남은 흥정  {5 - haggleAttempts} / 5", terminalContent, new Vector2(210, 25), new Vector2(300, 24), 16, new Color(.68f, .61f, .53f, 1));
+        Text(L($"남은 흥정  {5 - haggleAttempts} / 5", $"ATTEMPTS LEFT  {5 - haggleAttempts} / 5"), terminalContent, new Vector2(210, 25), new Vector2(300, 24), 16, new Color(.68f, .61f, .53f, 1));
         for (int index = 0; index < 5; index++)
         {
             GameObject pip = ImageObject("Attempt", terminalContent, index < haggleAttempts ? new Color(.48f, .18f, .07f, 1) : new Color(.23f, .2f, .17f, 1));
             SetRect(pip.GetComponent<RectTransform>(), new Vector2(154 + index * 30, -13), new Vector2(20, 8));
         }
-        Button haggle = CreateActionButton("흥정하기", terminalContent, new Vector2(180, -85), new Vector2(170, 48), new Color(.48f, .18f, .07f, 1));
+        Button haggle = CreateActionButton(L("흥정하기", "NEGOTIATE"), terminalContent, new Vector2(180, -85), new Vector2(170, 48), new Color(.48f, .18f, .07f, 1));
         haggle.interactable = haggleAttempts < 5;
         haggle.onClick.AddListener(TryHaggle);
-        Button accept = CreateActionButton("이 가격에 판매", terminalContent, new Vector2(-35, -160), new Vector2(200, 46), new Color(.22f, .36f, .22f, 1));
+        Button accept = CreateActionButton(L("이 가격에 판매", "ACCEPT OFFER"), terminalContent, new Vector2(-35, -160), new Vector2(200, 46), new Color(.22f, .36f, .22f, 1));
         accept.onClick.AddListener(FinalizeSale);
-        CreateActionButton("취소", terminalContent, new Vector2(200, -160), new Vector2(140, 46), new Color(.25f, .23f, .21f, 1)).onClick.AddListener(ShowShopSell);
+        CreateActionButton(L("취소", "CANCEL"), terminalContent, new Vector2(200, -160), new Vector2(140, 46), new Color(.25f, .23f, .21f, 1)).onClick.AddListener(ShowShopSell);
     }
 
     private void TryHaggle()
@@ -2139,12 +2250,14 @@ public sealed class GameplayUiController : MonoBehaviour
         {
             int increase = Mathf.Max(1, Mathf.RoundToInt(hagglePrice * Random.Range(UpgradeService.HaggleMinIncrease, UpgradeService.HaggleMaxIncrease)));
             hagglePrice += increase;
-            haggleMessage = $"흥정 성공. 제시가가 {increase:N0} 올랐습니다.";
+            haggleMessage = L($"흥정 성공. 제시가가 {increase:N0} 올랐습니다.", $"NEGOTIATION SUCCESS. OFFER INCREASED BY {increase:N0}.");
             GameNotificationCenter.Success($"흥정 성공 · 제시가 +{increase:N0}");
         }
         else
         {
-            haggleMessage = haggleAttempts >= 5 ? "더 이상의 흥정은 거부되었습니다." : "상점이 제안을 거절했습니다.";
+            haggleMessage = haggleAttempts >= 5
+                ? L("더 이상의 흥정은 거부되었습니다.", "THE SHOP REFUSES FURTHER NEGOTIATION.")
+                : L("상점이 제안을 거절했습니다.", "THE SHOP REJECTED YOUR OFFER.");
             GameNotificationCenter.Error(haggleAttempts >= 5 ? "흥정 기회를 모두 사용했습니다." : "흥정에 실패했습니다.");
         }
         RenderHaggle();
@@ -2163,9 +2276,9 @@ public sealed class GameplayUiController : MonoBehaviour
         RefreshInventoryUi();
         RefreshStatusHud();
         ClearTerminalContent();
-        Text("거래 완료", terminalContent, new Vector2(0, 80), new Vector2(520, 42), 30, new Color(.45f, .82f, .52f, 1));
-        Text($"{item}\n+ {hagglePrice:N0} 노동값", terminalContent, new Vector2(0, 5), new Vector2(500, 70), 21, Color.white);
-        CreateActionButton("판매 목록", terminalContent, new Vector2(0, -105), new Vector2(170, 46), new Color(.48f, .18f, .07f, 1)).onClick.AddListener(ShowShopSell);
+        Text(L("거래 완료", "TRANSACTION COMPLETE"), terminalContent, new Vector2(0, 80), new Vector2(520, 42), 30, new Color(.45f, .82f, .52f, 1));
+        Text(L($"{item}\n+ {hagglePrice:N0} 노동값", $"{GameLanguage.Item(item)}\n+ {hagglePrice:N0} LABOR"), terminalContent, new Vector2(0, 5), new Vector2(500, 70), 21, Color.white);
+        CreateActionButton(L("판매 목록", "BACK TO SELL LIST"), terminalContent, new Vector2(0, -105), new Vector2(190, 46), new Color(.48f, .18f, .07f, 1)).onClick.AddListener(ShowShopSell);
     }
 
     private void ClearTerminalContent()
@@ -2420,12 +2533,26 @@ public sealed class GameplayUiController : MonoBehaviour
     {
         GameObject card = CreateRoundedPanel(item, terminalContent, position, new Vector2(195, 255), new Color(.15f, .125f, .1f, 1), 10);
         GameObject icon = CreateRoundedPanel("Item Mark", card.transform, new Vector2(0, 62), new Vector2(60, 60), new Color(.28f, .2f, .14f, 1), 10);
-        Text(item.Substring(0, 1), icon.transform, Vector2.zero, new Vector2(48, 42), 28, new Color(.87f, .72f, .52f, 1));
+        Text(MarketIcon(item), icon.transform, Vector2.zero, new Vector2(48, 42), 24, new Color(.87f, .72f, .52f, 1));
         Text(item, card.transform, new Vector2(0, 15), new Vector2(175, 28), 18, Color.white);
         Text(description, card.transform, new Vector2(0, -18), new Vector2(170, 36), 13, new Color(.62f, .56f, .5f, 1));
-        Text(price.ToString("N0") + " 노동값", card.transform, new Vector2(0, -58), new Vector2(170, 25), 16, new Color(.87f, .72f, .52f, 1));
-        Button buy = CreateActionButton("구매", card.transform, new Vector2(0, -96), new Vector2(140, 36), new Color(.48f, .18f, .07f, 1));
+        Text(L(price.ToString("N0") + " 노동값", price.ToString("N0") + " LABOR"), card.transform, new Vector2(0, -58), new Vector2(170, 25), 16, new Color(.87f, .72f, .52f, 1));
+        Button buy = CreateActionButton(L("구매", "BUY"), card.transform, new Vector2(0, -96), new Vector2(140, 36), new Color(.48f, .18f, .07f, 1));
         buy.onClick.AddListener(() => BuyMarketItem(item, price));
+    }
+
+    private static string MarketIcon(string item)
+    {
+        if (!GameLanguage.IsEnglish) return string.IsNullOrEmpty(item) ? "?" : item.Substring(0, 1);
+        return item switch
+        {
+            "녹슨 가챠 상자" => "RU",
+            "보급 가챠 상자" => "SU",
+            "봉인된 상자" => "SB",
+            "군수 가챠 상자" => "MI",
+            "검은 금고" => "BV",
+            _ => "BX"
+        };
     }
 
     private void BuyMarketItem(string item, int price)
@@ -2551,6 +2678,8 @@ public sealed class GameplayUiController : MonoBehaviour
         return $"{minutes:00}:{remaining:00}";
     }
 
+    private static string L(string korean, string english) => GameLanguage.IsEnglish ? english : korean;
+
     private void CloseTerminal()
     {
         packOpeningActive = false;
@@ -2585,6 +2714,7 @@ public sealed class GameplayUiController : MonoBehaviour
 
     private void OnDestroy()
     {
+        SaveNightMarketState();
         if (pausePanel != null && Time.timeScale <= 0f)
             Time.timeScale = 1f;
         IsTerminalOpen = false;
@@ -2633,7 +2763,7 @@ public sealed class GameplayUiController : MonoBehaviour
         SetRect(item.GetComponent<RectTransform>(), pos, size);
         TextMeshProUGUI text = item.AddComponent<TextMeshProUGUI>();
         text.font = TMP_Settings.defaultFontAsset;
-        text.text = name;
+        text.text = GameLanguage.Item(name);
         text.raycastTarget = false;
         text.enableAutoSizing = false;
         text.fontStyle = FontStyles.Normal;

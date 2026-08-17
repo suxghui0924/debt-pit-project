@@ -21,6 +21,7 @@ public sealed class DailyStoryController : MonoBehaviour
     private string[] pages;
     private int pageIndex;
     private bool failure;
+    private bool freedomEnding;
     private bool isTyping;
     private bool awaitingChoice;
     private Coroutine typingRoutine;
@@ -30,6 +31,14 @@ public sealed class DailyStoryController : MonoBehaviour
         if (IsPlaying) return;
         instance = new GameObject("Daily Story Controller").AddComponent<DailyStoryController>();
         instance.failure = !paymentPaid;
+        instance.StartCoroutine(instance.BeginRoutine());
+    }
+
+    public static void BeginFreedomEnding()
+    {
+        if (IsPlaying) return;
+        instance = new GameObject("Freedom Ending Controller").AddComponent<DailyStoryController>();
+        instance.freedomEnding = true;
         instance.StartCoroutine(instance.BeginRoutine());
     }
 
@@ -55,7 +64,11 @@ public sealed class DailyStoryController : MonoBehaviour
         BuildCanvas();
         yield return Fade(0f, 1f, .45f);
 
-        if (failure)
+        if (freedomEnding)
+        {
+            pages = FreedomEndingPages();
+        }
+        else if (failure)
         {
             pages = FailurePages();
         }
@@ -106,7 +119,8 @@ public sealed class DailyStoryController : MonoBehaviour
 
         GameObject topBar = ImageObject("Top Cinema Bar", canvas.transform, new Color(0, 0, 0, .94f));
         SetRect(topBar.GetComponent<RectTransform>(), new Vector2(0, 490), new Vector2(1920, 100));
-        Text(failure ? "DEBT PIT // PAYMENT DEFAULT" : $"DEBT PIT // DAY {GameSaveService.Day:00}", topBar.transform, Vector2.zero, new Vector2(1100, 50), 23, failure ? new Color(1f, .18f, .15f, 1) : new Color(.82f, .12f, .08f, 1));
+        string sequenceTitle = freedomEnding ? "DEBT PIT // FREEDOM PROCEDURE" : failure ? "DEBT PIT // PAYMENT DEFAULT" : $"DEBT PIT // DAY {GameSaveService.Day:00}";
+        Text(sequenceTitle, topBar.transform, Vector2.zero, new Vector2(1100, 50), 23, failure ? new Color(1f, .18f, .15f, 1) : new Color(.82f, .12f, .08f, 1));
 
         sceneImageFrame = ImageObject("Story Image Frame", canvas.transform, new Color(.025f, .022f, .018f, .98f));
         SetRect(sceneImageFrame.GetComponent<RectTransform>(), new Vector2(0, 95), new Vector2(820, 430));
@@ -128,7 +142,7 @@ public sealed class DailyStoryController : MonoBehaviour
         SetRect(accent.GetComponent<RectTransform>(), new Vector2(-652, 0), new Vector2(10, 260));
         GameObject tag = ImageObject("Name Tag", panel.transform, failure ? new Color(.65f, .015f, .01f, 1) : new Color(.82f, .08f, .05f, 1));
         SetRect(tag.GetComponent<RectTransform>(), new Vector2(-500, 98), new Vector2(290, 50));
-        Text(failure ? "처분 관리 시스템" : "시설 안내 시스템", tag.transform, Vector2.zero, new Vector2(270, 38), 20, Color.white);
+        Text(freedomEnding ? "석방 처리 시스템" : failure ? "처분 관리 시스템" : "시설 안내 시스템", tag.transform, Vector2.zero, new Vector2(270, 38), 20, Color.white);
 
         body = Text(string.Empty, panel.transform, new Vector2(0, -15), new Vector2(1120, 105), 27, new Color(.075f, .065f, .055f, 1));
         body.alignment = TextAlignmentOptions.TopLeft;
@@ -157,7 +171,7 @@ public sealed class DailyStoryController : MonoBehaviour
     private void UpdateSceneImage()
     {
         if (sceneImage == null || sceneImageFrame == null) return;
-        string resourceName = StoryImageForPage(failure, GameSaveService.Day, pageIndex);
+        string resourceName = freedomEnding ? EndingImageForPage(pageIndex) : StoryImageForPage(failure, GameSaveService.Day, pageIndex);
         Texture2D texture = string.IsNullOrEmpty(resourceName) ? null : Resources.Load<Texture2D>("Story/" + resourceName);
         sceneImageFrame.SetActive(texture != null);
         if (texture == null) return;
@@ -177,7 +191,7 @@ public sealed class DailyStoryController : MonoBehaviour
             StopCoroutine(typingRoutine);
             body.text = pages[pageIndex];
             isTyping = false;
-            continueLabel.text = "[ 클릭 또는 SPACE : 계속 ]";
+            continueLabel.text = GameLanguage.IsEnglish ? "[ CLICK OR SPACE : CONTINUE ]" : "[ 클릭 또는 SPACE : 계속 ]";
             return;
         }
 
@@ -188,7 +202,8 @@ public sealed class DailyStoryController : MonoBehaviour
             return;
         }
 
-        if (failure) ShowRestartChoice();
+        if (freedomEnding) ShowEndingChoice();
+        else if (failure) ShowRestartChoice();
         else FinishDayStory();
     }
 
@@ -211,15 +226,34 @@ public sealed class DailyStoryController : MonoBehaviour
             yield return new WaitForSecondsRealtime(page[index] == '\n' ? .07f : .022f);
         }
         isTyping = false;
-        continueLabel.text = "[ 클릭 또는 SPACE : 계속 ]";
+        continueLabel.text = GameLanguage.IsEnglish ? "[ CLICK OR SPACE : CONTINUE ]" : "[ 클릭 또는 SPACE : 계속 ]";
     }
 
     private void ShowRestartChoice()
     {
         GameSaveService.InvalidateSave();
         awaitingChoice = true;
-        body.text = "지급 능력이 없는 수용자의 기록은 여기서 종료된다.\n\n다시 시작하시겠습니까?";
+        body.text = GameLanguage.IsEnglish
+            ? "The record of a detainee unable to pay ends here.\n\nWould you like to start again?"
+            : "지급 능력이 없는 수용자의 기록은 여기서 종료된다.\n\n다시 시작하시겠습니까?";
         continueLabel.text = string.Empty;
+        yesButton.gameObject.SetActive(true);
+        noButton.gameObject.SetActive(true);
+        StartCoroutine(UiOpenAnimator.Play(yesButton.transform.parent.gameObject));
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
+    private void ShowEndingChoice()
+    {
+        GameSaveService.InvalidateSave();
+        awaitingChoice = true;
+        body.text = GameLanguage.IsEnglish
+            ? "The record has ended, but the facility is ready to begin DAY 1 again.\n\nWould you like to restart from the beginning?"
+            : "기록은 종료되었다. 그러나 시설의 DAY 1은 다시 시작될 준비를 마쳤다.\n\n처음부터 다시 시작하시겠습니까?";
+        continueLabel.text = string.Empty;
+        yesButton.GetComponentInChildren<TMP_Text>().text = GameLanguage.Runtime("예 · 다시 시작");
+        noButton.GetComponentInChildren<TMP_Text>().text = GameLanguage.Runtime("아니오 · 타이틀");
         yesButton.gameObject.SetActive(true);
         noButton.gameObject.SetActive(true);
         StartCoroutine(UiOpenAnimator.Play(yesButton.transform.parent.gameObject));
@@ -264,14 +298,35 @@ public sealed class DailyStoryController : MonoBehaviour
         fade.color = new Color(0, 0, 0, to);
     }
 
-    private static string[] FailurePages() => new[]
+    private static string[] FailurePages() => GameLanguage.IsEnglish ? new[]
+    {
+        "00:00. The facility clock stops.\nOnly one line remains on the terminal: ‘DAILY LABOR PAYMENT OVERDUE.’",
+        "The locks engage one after another. The ventilation dies, and heavy footsteps approach from the end of the corridor.",
+        "The facility does not lie.\nA debtor who cannot purchase the right to live does not see another day."
+    } : new[]
     {
         "00:00. 시설 시계가 멈췄다.\n단말기에는 단 한 줄만 남았다.  ‘일일 노동값 미납.’",
         "잠금 장치가 순서대로 닫힌다. 환풍기 소리가 멎고, 복도 끝에서 무거운 발소리가 가까워진다.",
         "시설은 거짓말을 하지 않는다.\n살아 있을 권리를 구매하지 못한 채무자는 다음 날을 맞이하지 못한다."
     };
 
-    private static string[] StoryForDay(int day) => day switch
+    private static string[] FreedomEndingPages() => GameLanguage.IsEnglish ? new[]
+    {
+        "FREEDOM FUND: 100,000,000. As the final digit fills, the terminal plays a congratulatory tune. ‘PAYMENT COMPLETE. BEGINNING RELEASE PROCEDURE.’",
+        "The sealed exit opens. There is no street and no sky beyond it—only a white chair and a metal frame waiting to restrain your head.",
+        "The government never lied to its prisoners. You will leave this facility—not as the person you are, but as the next detainee who remembers nothing.",
+        "A final clause appears at the bottom of the screen. ‘UPON FULL PAYMENT, SUBJECT MEMORY SHALL BE REMOVED AND SUBJECT REASSIGNED TO DAY 1.’ You have paid this sum before.",
+        "The machine activates. The last thing you hear is a computer booting.\n\nDAY 01. You have lost your name."
+    } : new[]
+    {
+        "자유 기금 100,000,000. 마지막 숫자가 채워지는 순간, 단말기가 처음으로 축하 음악을 재생했다.  ‘납부 완료. 석방 절차를 시작합니다.’",
+        "잠겨 있던 출구가 열렸다. 문 너머에는 거리도 하늘도 없었다. 하얀 의자 하나와 머리를 고정하는 금속 장치만 기다리고 있었다.",
+        "정부는 죄수에게 거짓말하지 않았다. 당신은 이 시설에서 나간다. 다만 기억을 가진 당신이 아니라, 아무것도 모르는 다음 수용자가 되어 나갈 뿐이다.",
+        "화면 아래 작은 약관이 마지막으로 표시됐다.  ‘자유 기금 완납자는 기억 제거 후 DAY 1 구역에 재배치한다.’ 당신은 이미 여러 번 이 금액을 냈다.",
+        "장치가 작동한다. 마지막으로 들린 것은 컴퓨터의 부팅음이었다.\n\nDAY 01. 당신은 이름을 잃었다."
+    };
+
+    private static string[] StoryForDay(int day) => GameLanguage.IsEnglish ? EnglishStoryForDay(day) : day switch
     {
         2 => new[] { "두 번째 아침이다. 투입구 안쪽에서 누군가 세 번 두드렸다. 확인했을 때는 아무것도 없었다.", "단말기는 오늘의 청구액을 표시했다. 어제보다 숫자가 커졌지만, 설명은 없었다." },
         3 => new[] { "세 번째 아침, 물건 투입구에서 배급 캔 하나가 굴러 나왔다. 주문한 적 없는 물건이었다.", "캔의 이중 바닥을 뜯자 접힌 편지가 나왔다.  ‘자유 기금은 출구가 아니라 카운터다.’" },
@@ -288,6 +343,25 @@ public sealed class DailyStoryController : MonoBehaviour
         14 => new[] { "출구 엘리베이터가 잠시 열렸다. 안에는 밖으로 향하는 버튼이 없고, 지하로 내려가는 버튼만 있었다.", "버튼 옆에는 작은 문구가 적혀 있었다.  ‘신규 수용 절차.’" },
         15 => new[] { "자유 기금 목표가 가까워지자 시스템이 축하 메시지를 보냈다. 그 아래 아주 작은 글씨가 깜빡였다.", "‘지급 완료 시 대상 기억 제거 및 DAY 1 재배치.’ 이제 출구가 무엇인지 알 것 같다." },
         _ => new[] { $"DAY {day:00}. 시설은 여전히 정상이라고 주장한다. 하지만 밤마다 벽 너머에서 같은 작업음이 반복된다.", "누군가가 당신보다 먼저 이 하루를 살았고, 어쩌면 그 누군가도 당신이었을 것이다." }
+    };
+
+    private static string[] EnglishStoryForDay(int day) => day switch
+    {
+        2 => new[] { "On the second morning, someone knocks three times from inside the delivery chute. When you check, nothing is there.", "The terminal displays today's charge. The number is larger than yesterday, but no explanation is provided." },
+        3 => new[] { "On the third morning, an unrequested ration can rolls out of the delivery chute.", "A folded note lies beneath its false bottom: ‘THE FREEDOM FUND IS NOT AN EXIT. IT IS A COUNTER.’" },
+        4 => new[] { "During the night, another terminal connects under the same username as yours: ANONYMOUS.", "No message arrives. Instead, the Freedom Fund increases by one." },
+        5 => new[] { "A torn photograph is hidden beneath a ration can. The face is missing, but the handwriting on the back feels familiar.", "‘DO NOT PAY THIS TIME.’ Today's date is written beneath it." },
+        6 => new[] { "The night-market dealer greets you like an old customer.", "When you say you have never met, the dealer laughs. ‘Everyone says that the first time.’" },
+        7 => new[] { "The Freedom Fund server briefly fails. In place of the target amount, it displays: ‘MEMORY RECOVERY SCHEDULED: 100%.’", "The system reboots itself before you can open the error report." },
+        8 => new[] { "You find your prisoner number in the disposal records. The same number has already been executed thirteen times.", "Every record ends with the same sentence: ‘MEMORY RESET COMPLETE. SUBJECT REASSIGNED.’" },
+        9 => new[] { "A recorder arrives through the chute. When you press play, your own voice speaks.", "‘If you are hearing this, I failed again. Even if you reach the exit, do not close your eyes.’" },
+        10 => new[] { "The central audit system connects. Labor performance: excellent. Compliance: stable. Memory retention: dangerous.", "Only the final entry is red: ‘IMMEDIATE RECOVERY UPON RECOGNITION OF TRUTH.’" },
+        11 => new[] { "Trade values begin rising explosively. The facility calls it a diligent-worker bonus.", "The daily charge rises with them. Reward and debt were designed to grow together." },
+        12 => new[] { "An old exit card is found inside a sealed box. Your fingerprint is already registered on it.", "The registration date predates your imprisonment." },
+        13 => new[] { "For the first time, the facility broadcast attempts to say your name. Only a short mechanical tone follows the static.", "The terminal record reads: ‘DELETED NAME RECOVERY ATTEMPTS: 47.’" },
+        14 => new[] { "The exit elevator opens briefly. It has no button for the surface—only one leading farther underground.", "Beside it is a small label: ‘NEW DETAINEE PROCESSING.’" },
+        15 => new[] { "As the Freedom Fund nears completion, the system sends a congratulatory message. Tiny text flickers beneath it.", "‘UPON PAYMENT: REMOVE SUBJECT MEMORY AND REASSIGN TO DAY 1.’ You finally understand the exit." },
+        _ => new[] { $"DAY {day:00}. The facility still insists everything is normal, but the same labor sounds repeat behind the wall each night.", "Someone lived this day before you. Perhaps that someone was also you." }
     };
 
     private static string StoryImageForPage(bool isFailure, int day, int page)
@@ -313,6 +387,15 @@ public sealed class DailyStoryController : MonoBehaviour
         };
     }
 
+    private static string EndingImageForPage(int page) => page switch
+    {
+        0 => "day_15_reset_contract",
+        1 => "day_14_elevator",
+        2 => "day_08_execution_records",
+        3 => "day_15_reset_contract",
+        _ => "day_default_cell_wall"
+    };
+
     private static GameObject ImageObject(string name, Transform parent, Color color)
     {
         GameObject item = new(name, typeof(RectTransform), typeof(Image));
@@ -328,7 +411,7 @@ public sealed class DailyStoryController : MonoBehaviour
         SetRect(item.GetComponent<RectTransform>(), position, size);
         TextMeshProUGUI text = item.GetComponent<TextMeshProUGUI>();
         text.font = TMP_Settings.defaultFontAsset;
-        text.text = value;
+        text.text = GameLanguage.Runtime(value);
         text.fontSize = fontSize;
         text.alignment = TextAlignmentOptions.Center;
         text.color = color;

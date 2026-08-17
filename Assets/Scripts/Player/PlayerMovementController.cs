@@ -14,6 +14,7 @@ public sealed class PlayerMovementController : MonoBehaviour
     [SerializeField] private float acceleration = 45f;
     [SerializeField] private float deceleration = 55f;
     [SerializeField] private float mouseSensitivity = 2.2f;
+    [SerializeField] private float mouseSmoothing = 32f;
     [SerializeField] private float bobSpeed = 8f;
     [SerializeField] private float bobAmount = 0.015f;
     [SerializeField] private float crouchHeight = 1.1f;
@@ -32,6 +33,8 @@ public sealed class PlayerMovementController : MonoBehaviour
     private float standingHeight;
     private Vector3 standingCenter;
     private float pitch;
+    private float yaw;
+    private Vector2 smoothedMouseDelta;
     private float bobTimer;
     private bool isCrouching;
     private float footstepDistance;
@@ -42,6 +45,8 @@ public sealed class PlayerMovementController : MonoBehaviour
         mouseSensitivity = GameSettings.MouseSensitivity;
         body = GetComponent<Rigidbody>();
         body.freezeRotation = true;
+        body.interpolation = RigidbodyInterpolation.Interpolate;
+        yaw = body.rotation.eulerAngles.y;
         capsule = GetComponent<CapsuleCollider>();
 
         if (capsule != null)
@@ -68,6 +73,7 @@ public sealed class PlayerMovementController : MonoBehaviour
         if (GameplayUiController.IsTerminalOpen || DailyStoryController.IsPlaying || StoryIntroController.IsPlaying || GameplayTutorialController.IsBlockingGameplay)
         {
             moveInput = Vector2.zero;
+            smoothedMouseDelta = Vector2.zero;
             return;
         }
 
@@ -76,6 +82,7 @@ public sealed class PlayerMovementController : MonoBehaviour
         moveInput = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
         isCrouching = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.C);
         UpdateCrouch();
+        UpdateHeadBob(moveInput.sqrMagnitude > 0.01f);
         UpdateViewPosition();
 
         if (Input.GetKeyDown(KeyCode.Escape))
@@ -90,11 +97,19 @@ public sealed class PlayerMovementController : MonoBehaviour
         }
 
         if (Cursor.lockState != CursorLockMode.Locked || playerView == null)
+        {
+            smoothedMouseDelta = Vector2.zero;
             return;
+        }
 
-        float mouseX = Input.GetAxisRaw("Mouse X") * mouseSensitivity;
-        float mouseY = Input.GetAxisRaw("Mouse Y") * mouseSensitivity;
-        transform.Rotate(Vector3.up * mouseX);
+        mouseSensitivity = GameSettings.MouseSensitivity;
+        Vector2 rawMouseDelta = new(Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y"));
+        float smoothing = 1f - Mathf.Exp(-Mathf.Max(1f, mouseSmoothing) * Time.unscaledDeltaTime);
+        smoothedMouseDelta = Vector2.Lerp(smoothedMouseDelta, rawMouseDelta, smoothing);
+        float mouseX = smoothedMouseDelta.x * mouseSensitivity;
+        float mouseY = smoothedMouseDelta.y * mouseSensitivity;
+        yaw += mouseX;
+        body.rotation = Quaternion.Euler(0f, yaw, 0f);
 
         pitch = Mathf.Clamp(pitch - mouseY, -85f, 85f);
         playerView.localRotation = Quaternion.Euler(pitch, 0f, 0f);
@@ -110,7 +125,6 @@ public sealed class PlayerMovementController : MonoBehaviour
         horizontalVelocity = Vector3.MoveTowards(horizontalVelocity, targetVelocity, rate * Time.fixedDeltaTime);
 
         body.linearVelocity = new Vector3(horizontalVelocity.x, body.linearVelocity.y, horizontalVelocity.z);
-        UpdateHeadBob(moveInput.sqrMagnitude > 0.01f);
         UpdateFootsteps(horizontalVelocity.magnitude);
     }
 
@@ -154,13 +168,13 @@ public sealed class PlayerMovementController : MonoBehaviour
 
         if (isMoving)
         {
-            bobTimer += Time.fixedDeltaTime * bobSpeed;
+            bobTimer += Time.deltaTime * bobSpeed;
             bobOffset = Vector3.up * Mathf.Sin(bobTimer) * bobAmount;
         }
         else
         {
             bobTimer = 0f;
-            bobOffset = Vector3.Lerp(bobOffset, Vector3.zero, Time.fixedDeltaTime * 8f);
+            bobOffset = Vector3.Lerp(bobOffset, Vector3.zero, Time.deltaTime * 8f);
         }
     }
 
